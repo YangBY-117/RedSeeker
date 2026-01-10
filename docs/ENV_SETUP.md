@@ -4,55 +4,69 @@
 
 ## 1. 通用环境要求
 
-- Git
-- Java 17+（建议使用 LTS 版本）
-- Maven 3.8+
-- Node.js 18+（建议使用 LTS 版本）
-- npm（随 Node.js 安装）
-- 数据库（按实际选型安装，如 MySQL 8+）
+- **Git**: 版本控制工具
+- **Java 17+**: 必须手动安装并配置 `JAVA_HOME`
+- **Maven & Node.js**:
+    - **推荐**: 使用项目自带的 `setup_tools.ps1` 脚本自动配置（无需手动安装）
+    - 自行安装要求: Maven 3.9+, Node.js 20+
+- **数据库**: *选型中，暂不需要安装*
 
-## 2. 后端（Spring Boot）环境配置
+## 2. 快速启动脚本 (环境自动配置)
 
-### 2.1 安装依赖
+项目根目录提供了 `setup_tools.ps1` 脚本，用于自动下载并配置 Portable 版的 Maven 和 Node.js 环境。
 
-- 安装 JDK（建议 Java 17）并配置 `JAVA_HOME`
-- 安装 Maven 并确保 `mvn -v` 可用
+**使用方式 (PowerShell):**
 
-### 2.2 本地运行
-
-在 `backend/` 目录执行：
-
-```bash
-mvn spring-boot:run
+```powershell
+# 在当前终端会话中激活环境（注意开头的 "点" 和 "空格"）
+. .\setup_tools.ps1
 ```
 
-如需配置数据库连接、端口等参数，请在 `application.yml`/`application.properties` 中修改（若项目后续提供具体配置文件，请以实际文件为准）。
+> **重要提示**: 每次打开新的 VS Code 终端准备开发时，请先运行此命令以加载 Maven 和 Node.js 环境变量。
 
-## 3. 前端（Vue 3 + Vite）环境配置
+## 3. 后端（Spring Boot）环境配置
 
-### 3.1 安装依赖
+### 3.1 启动准备
 
-在 `frontend/` 目录执行：
-
-```bash
-npm install
-```
+确保已安装 JDK 17+，并已在当前终端运行了环境配置脚本。
 
 ### 3.2 本地运行
 
-```bash
+进入 `backend/` 目录：
+
+```powershell
+# 编译并安装依赖
+mvn clean install
+
+# 启动应用
+mvn spring-boot:run
+```
+
+> **特别说明**: 由于数据库选型未定，后端已配置为排除 `DataSourceAutoConfiguration`，启动时**不需要**连接数据库。
+
+## 4. 前端（Vue 3 + Vite）环境配置
+
+### 4.1 启动准备
+
+进入 `frontend/` 目录（确保已运行环境配置脚本）：
+
+```powershell
+# 安装依赖
+npm install
+
+# 启动开发服务器
 npm run dev
 ```
 
-> 若前端需要对接后端接口，请确认后端服务已启动，并根据需要配置代理（如 `vite.config.js`）。
+## 5. 数据库环境配置
 
-## 4. 数据库环境配置
+**状态：选型未定**
 
-- 按实际选型安装数据库（如 MySQL）
-- 在 `database/` 目录中执行迁移脚本或初始化脚本（若项目后续补充）
-- 迁移脚本应由数据库负责人维护并在 PR 中说明变更影响
+- 目前开发阶段**暂不需要安装数据库**。
+- 后端代码已做特殊处理，可以在无数据库状态下运行。
+- 待选型确定后，将在此处更新具体的安装指南。
 
-## 5. 常见问题排查
+## 6. 常见问题排查
 
 - **端口冲突**：确认后端/前端默认端口未被占用，必要时修改配置
 - **依赖安装失败**：尝试清理缓存后重装（`npm cache clean --force`）
