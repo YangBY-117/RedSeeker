@@ -26,8 +26,12 @@ RedSeeker/
 - 架构形态：前端 Vue 应用通过 HTTP 调用后端 REST API；后端负责业务逻辑与算法；数据层由 MySQL 提供持久化存储。
 - 接口约定：所有后端接口统一以 `/api` 为前缀，返回 `ApiResponse` 结构，异常统一由全局处理器转换为错误响应。
 - 推荐模块：
-  - `/api/recommend/list`：基于用户偏好、旅行风格输出推荐列表。
-  - `/api/recommend/ai-plan`：接收自然语言需求，返回行程摘要与分日计划（后续接入大模型）。
+  - `/api/recommend/list`：基于用户偏好、旅行风格输出红色旅游推荐列表。
+    - 核心类：`RecommendServiceImpl`（当前使用 Mock 数据，包含了“中共一大会址”、“井冈山”、“延安”等经典红色景点）。
+    - 数据模型：`RecommendItem` 包含历史背景 (`history`) 和推荐理由 (`reason`) 字段，支持个性化评分。
+  - `/api/recommend/ai-plan`：接收自然语言需求，Simulate 生成行程摘要与分日计划。
+    - 输入：`AiPlanRequest` (prompt, days, city)
+    - 输出：`AiPlanResponse` (summary, List<ItineraryPlan>)
 - 模块协作：用户管理提供身份信息；推荐、路径规划、查询、日记模块通过服务层封装业务逻辑；数据库表结构由数据库负责人维护迁移脚本。
 - 代码约定：
   - `common` 包放置通用响应体、错误码、异常与全局处理。
