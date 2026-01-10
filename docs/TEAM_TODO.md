@@ -8,6 +8,7 @@
 - `docs/PROJECT_STRUCTURE.md`（总体设计与结构说明补充）
 - `backend/src/main/java/com/redseeker/recommend/` 下的所有实现类（推荐算法、AI 行程接口）
 - `backend/src/main/java/com/redseeker/common/` 下的通用返回体、异常封装等
+- 个性化红色旅游推荐：基于用户画像输出推荐列表（含景点历史背景、推荐理由、用户匹配度评分）
 
 **不要修改**
 - `frontend/` 目录全部文件
@@ -32,6 +33,9 @@
 - `backend/src/main/java/com/redseeker/route/` 下路径规划算法相关类
 - `backend/src/main/java/com/redseeker/place/` 场所查询模块
 - `backend/src/main/java/com/redseeker/diary/` 日记管理模块
+- 多条件组合查询：支持关键词、地区、历史事件、参观热度等条件组合检索（响应时间≤0.5秒，准确率≥95%）
+- 最优路径方案：包含交通方式、参观时长、历史故事讲解点，支持用户自定义调整并实时更新总览与预计消耗
+- 研学日志全流程：创建、编辑、分享，支持图文混排、打卡标记、心得记录，自动关联景点生成结构化模板
 
 **不要修改**
 - `frontend/` 目录全部文件
