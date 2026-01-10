@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# Vite
+frontend/dist/
+frontend/.vite/
+
+# Logs
+npm-debug.log*

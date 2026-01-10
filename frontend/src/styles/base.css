@@ -1,0 +1,14 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  color: #1f2a44;
+  background: #f7f8fb;
+}
+
+a {
+  color: inherit;
+}
