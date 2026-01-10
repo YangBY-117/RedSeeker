@@ -48,7 +48,8 @@
 - `database/migrations/` 下的 SQL 迁移脚本
 - `database/README.md`（数据库说明与初始化步骤）
 - `docs/` 中测试与部署相关文档
+- 地图 API 接入与地图读取能力（后端 `com.redseeker.map` 模块接口封装与对接说明）
 
 **不要修改**
 - `frontend/` 目录全部文件
-- `backend/` 目录全部文件（除非与数据库对接字段协商）
+- `backend/` 目录全部文件（仅允许 `backend/src/main/java/com/redseeker/map/` 模块）
