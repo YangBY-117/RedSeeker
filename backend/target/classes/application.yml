@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: redseeker-backend
+  datasource:
+    url: jdbc:mysql://localhost:3306/redseeker
+    username: root
+    password: password
+
+server:
+  port: 8080
