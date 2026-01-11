@@ -1,0 +1,136 @@
+package com.redseeker.route;
+
+import com.redseeker.common.ErrorCode;
+import com.redseeker.common.ServiceException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
+
+@Service
+public class RouteServiceImpl implements RouteService {
+  private final AmapClient amapClient;
+  private final Map<Long, AttractionInfo> attractionStore;
+
+  public RouteServiceImpl(AmapClient amapClient) {
+    this.amapClient = amapClient;
+    this.attractionStore = buildAttractions();
+  }
+
+  @Override
+  public RouteSingleResponse planSingle(RouteSingleRequest request) {
+    AttractionInfo attraction = getAttraction(request.getAttractionId());
+    LocationDto destination = new LocationDto(attraction.getLongitude(), attraction.getLatitude(), attraction.getAddress());
+    RoutePath route = amapClient.planRoute(request.getStartLocation(), destination, request.getTransportMode());
+    return new RouteSingleResponse(route, attraction, request.getStartLocation());
+  }
+
+  @Override
+  public RouteMultipleResponse planMultiple(RouteMultipleRequest request) {
+    List<AttractionInfo> attractions = request.getAttractionIds().stream()
+        .map(this::getAttraction)
+        .toList();
+
+    List<AttractionInfo> ordered = orderAttractions(attractions, request.getStrategy());
+    List<RouteSegment> segments = new ArrayList<>();
+    List<String> polylines = new ArrayList<>();
+
+    LocationDto current = request.getStartLocation();
+    Long previousAttractionId = null;
+    double totalDistance = 0;
+    double totalDuration = 0;
+
+    for (AttractionInfo attraction : ordered) {
+      LocationDto destination = new LocationDto(attraction.getLongitude(), attraction.getLatitude(), attraction.getAddress());
+      RoutePath routePath = amapClient.planRoute(current, destination, request.getTransportMode());
+      segments.add(new RouteSegment(previousAttractionId, attraction.getId(), routePath.getDistance(),
+          routePath.getDuration(), routePath.getPolyline(), routePath.getSteps()));
+      totalDistance += routePath.getDistance();
+      totalDuration += routePath.getDuration();
+      if (routePath.getPolyline() != null && !routePath.getPolyline().isBlank()) {
+        polylines.add(routePath.getPolyline());
+      }
+      current = destination;
+      previousAttractionId = attraction.getId();
+    }
+
+    LocationDto end = request.getEndLocation() != null ? request.getEndLocation() : request.getStartLocation();
+    if (request.getEndLocation() != null) {
+      RoutePath routePath = amapClient.planRoute(current, end, request.getTransportMode());
+      segments.add(new RouteSegment(previousAttractionId, null, routePath.getDistance(), routePath.getDuration(),
+          routePath.getPolyline(), routePath.getSteps()));
+      totalDistance += routePath.getDistance();
+      totalDuration += routePath.getDuration();
+      if (routePath.getPolyline() != null && !routePath.getPolyline().isBlank()) {
+        polylines.add(routePath.getPolyline());
+      }
+    }
+
+    List<RouteStage> stages = buildStages(ordered);
+    List<String> storyPoints = ordered.stream()
+        .flatMap(attraction -> attraction.getStoryPoints().stream())
+        .distinct()
+        .toList();
+
+    RoutePlan plan = new RoutePlan(totalDistance, totalDuration, request.getTransportMode(), storyPoints,
+        stages, segments, String.join(";", polylines));
+    return new RouteMultipleResponse(plan, attractions);
+  }
+
+  @Override
+  public LocationDto currentLocation() {
+    return new LocationDto(121.4737, 31.2304, "上海市黄浦区人民广场");
+  }
+
+  private List<AttractionInfo> orderAttractions(List<AttractionInfo> attractions, String strategy) {
+    if (Objects.equals("shortest", strategy)) {
+      return new ArrayList<>(attractions);
+    }
+
+    return attractions.stream()
+        .sorted(Comparator.comparing(AttractionInfo::getPeriod))
+        .toList();
+  }
+
+  private List<RouteStage> buildStages(List<AttractionInfo> ordered) {
+    Map<String, List<AttractionInfo>> grouped = ordered.stream()
+        .collect(Collectors.groupingBy(AttractionInfo::getPeriod, LinkedHashMap::new, Collectors.toList()));
+
+    List<RouteStage> stages = new ArrayList<>();
+    for (Map.Entry<String, List<AttractionInfo>> entry : grouped.entrySet()) {
+      List<OrderedAttraction> stageAttractions = new ArrayList<>();
+      int order = 1;
+      for (AttractionInfo attraction : entry.getValue()) {
+        stageAttractions.add(new OrderedAttraction(attraction.getId(), attraction.getName(), order, 0, 0));
+        order += 1;
+      }
+      stages.add(new RouteStage(entry.getKey(), entry.getKey(), stageAttractions));
+    }
+    return stages;
+  }
+
+  private AttractionInfo getAttraction(Long id) {
+    AttractionInfo attraction = attractionStore.get(id);
+    if (attraction == null) {
+      throw new ServiceException(ErrorCode.NOT_FOUND, "景点不存在");
+    }
+    return attraction;
+  }
+
+  private Map<Long, AttractionInfo> buildAttractions() {
+    Map<Long, AttractionInfo> data = new LinkedHashMap<>();
+    data.put(1L, new AttractionInfo(1L, "中共一大会址", "上海市黄浦区兴业路76号", 121.4752, 31.2204,
+        "建党初期", List.of("初心教育", "建党会议场景")));
+    data.put(2L, new AttractionInfo(2L, "南湖红船", "浙江省嘉兴市南湖区", 120.7551, 30.7566,
+        "建党初期", List.of("红船精神", "水上课堂")));
+    data.put(3L, new AttractionInfo(3L, "井冈山革命博物馆", "江西省吉安市井冈山市", 114.1732, 26.5720,
+        "土地革命", List.of("井冈山斗争", "革命根据地")));
+    data.put(4L, new AttractionInfo(4L, "延安革命纪念馆", "陕西省延安市宝塔区", 109.4898, 36.5965,
+        "抗日战争", List.of("延安精神", "窑洞课堂")));
+    return data;
+  }
+}
