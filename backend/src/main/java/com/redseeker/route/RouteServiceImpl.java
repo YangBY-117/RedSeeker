@@ -1,7 +1,5 @@
 package com.redseeker.route;
 
-import com.redseeker.common.ErrorCode;
-import com.redseeker.common.ServiceException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -14,11 +12,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class RouteServiceImpl implements RouteService {
   private final AmapClient amapClient;
-  private final Map<Long, AttractionInfo> attractionStore;
+  private final RouteRepository routeRepository;
 
-  public RouteServiceImpl(AmapClient amapClient) {
+  public RouteServiceImpl(AmapClient amapClient, RouteRepository routeRepository) {
     this.amapClient = amapClient;
-    this.attractionStore = buildAttractions();
+    this.routeRepository = routeRepository;
   }
 
   @Override
@@ -32,7 +30,7 @@ public class RouteServiceImpl implements RouteService {
   @Override
   public RouteMultipleResponse planMultiple(RouteMultipleRequest request) {
     List<AttractionInfo> attractions = request.getAttractionIds().stream()
-        .map(this::getAttraction)
+        .map(routeRepository::getAttraction)
         .toList();
 
     List<AttractionInfo> ordered = orderAttractions(attractions, request.getStrategy());
@@ -92,7 +90,7 @@ public class RouteServiceImpl implements RouteService {
     }
 
     return attractions.stream()
-        .sorted(Comparator.comparing(AttractionInfo::getPeriod))
+        .sorted(Comparator.comparingInt(AttractionInfo::getStartYear))
         .toList();
   }
 
@@ -114,23 +112,6 @@ public class RouteServiceImpl implements RouteService {
   }
 
   private AttractionInfo getAttraction(Long id) {
-    AttractionInfo attraction = attractionStore.get(id);
-    if (attraction == null) {
-      throw new ServiceException(ErrorCode.NOT_FOUND, "景点不存在");
-    }
-    return attraction;
-  }
-
-  private Map<Long, AttractionInfo> buildAttractions() {
-    Map<Long, AttractionInfo> data = new LinkedHashMap<>();
-    data.put(1L, new AttractionInfo(1L, "中共一大会址", "上海市黄浦区兴业路76号", 121.4752, 31.2204,
-        "建党初期", List.of("初心教育", "建党会议场景")));
-    data.put(2L, new AttractionInfo(2L, "南湖红船", "浙江省嘉兴市南湖区", 120.7551, 30.7566,
-        "建党初期", List.of("红船精神", "水上课堂")));
-    data.put(3L, new AttractionInfo(3L, "井冈山革命博物馆", "江西省吉安市井冈山市", 114.1732, 26.5720,
-        "土地革命", List.of("井冈山斗争", "革命根据地")));
-    data.put(4L, new AttractionInfo(4L, "延安革命纪念馆", "陕西省延安市宝塔区", 109.4898, 36.5965,
-        "抗日战争", List.of("延安精神", "窑洞课堂")));
-    return data;
+    return routeRepository.getAttraction(id);
   }
 }

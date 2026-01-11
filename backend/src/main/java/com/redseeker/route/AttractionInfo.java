@@ -10,11 +10,12 @@ public class AttractionInfo {
   private double latitude;
   private String period;
   private List<String> storyPoints;
+  private int startYear;
 
   public AttractionInfo() {}
 
   public AttractionInfo(Long id, String name, String address, double longitude, double latitude, String period,
-      List<String> storyPoints) {
+      List<String> storyPoints, int startYear) {
     this.id = id;
     this.name = name;
     this.address = address;
@@ -22,6 +23,7 @@ public class AttractionInfo {
     this.latitude = latitude;
     this.period = period;
     this.storyPoints = storyPoints;
+    this.startYear = startYear;
   }
 
   public Long getId() {
@@ -78,5 +80,13 @@ public class AttractionInfo {
 
   public void setStoryPoints(List<String> storyPoints) {
     this.storyPoints = storyPoints;
+  }
+
+  public int getStartYear() {
+    return startYear;
+  }
+
+  public void setStartYear(int startYear) {
+    this.startYear = startYear;
   }
 }

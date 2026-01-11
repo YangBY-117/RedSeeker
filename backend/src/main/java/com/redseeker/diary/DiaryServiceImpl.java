@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 public class DiaryServiceImpl implements DiaryService {
   private final AtomicLong idGenerator = new AtomicLong(1);
   private final Map<Long, DiaryEntry> store = new ConcurrentHashMap<>();
+  private final DiaryRepository repository = new DiaryRepository();
 
   @Override
   public DiaryEntry create(DiaryRequest request) {
@@ -24,6 +25,9 @@ public class DiaryServiceImpl implements DiaryService {
     DiaryEntry entry = new DiaryEntry(id, request.getTitle(), request.getContent(),
         safeList(request.getImages()), safeList(request.getTags()), request.getAttractionId(),
         Boolean.TRUE.equals(request.getCheckedIn()), request.getCheckInNote(), template, false, now, now);
+    if (repository.isDatabaseReady()) {
+      return repository.insert(entry);
+    }
     store.put(id, entry);
     return entry;
   }
@@ -45,12 +49,19 @@ public class DiaryServiceImpl implements DiaryService {
         existing.isShared(),
         existing.getCreatedAt(),
         now);
+    if (repository.isDatabaseReady()) {
+      return repository.update(updated);
+    }
     store.put(id, updated);
     return updated;
   }
 
   @Override
   public DiaryEntry get(Long id) {
+    if (repository.isDatabaseReady()) {
+      return repository.fetchById(id)
+          .orElseThrow(() -> new ServiceException(ErrorCode.NOT_FOUND, "日志不存在"));
+    }
     DiaryEntry entry = store.get(id);
     if (entry == null) {
       throw new ServiceException(ErrorCode.NOT_FOUND, "日志不存在");
@@ -60,6 +71,9 @@ public class DiaryServiceImpl implements DiaryService {
 
   @Override
   public List<DiaryEntry> list() {
+    if (repository.isDatabaseReady()) {
+      return repository.list();
+    }
     return store.values().stream()
         .sorted(Comparator.comparing(DiaryEntry::getCreatedAt).reversed())
         .toList();
@@ -71,6 +85,9 @@ public class DiaryServiceImpl implements DiaryService {
     DiaryEntry shared = new DiaryEntry(entry.getId(), entry.getTitle(), entry.getContent(), entry.getImages(),
         entry.getTags(), entry.getAttractionId(), entry.isCheckedIn(), entry.getCheckInNote(), entry.getTemplate(),
         true, entry.getCreatedAt(), Instant.now());
+    if (repository.isDatabaseReady()) {
+      return repository.update(shared);
+    }
     store.put(id, shared);
     return shared;
   }
