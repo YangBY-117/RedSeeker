@@ -64,7 +64,6 @@ git push -u origin <name>/<module>
 - 迁移脚本命名规范、可重复执行（或明确说明执行顺序）。
 - 脚本与后端字段保持一致（必要时在 PR 中说明变更影响）。
 - 若涉及结构变更，附上简要说明（字段含义、默认值等）。
-- 注意：`migrations/002_users_and_ratings.sql` 假定目标 DB 中存在 `attractions` 表（由景点数据迁移或 `red_tourism.db` 提供）。运行迁移时请确保将该脚本应用到包含 `attractions` 的数据库（通常为 `red_tourism.db`），否则跨库引用可能无法生效或外键不会被强制执行；若选择将用户数据独立到 `users.db`，请在使用时 `ATTACH 'red_tourism.db' AS tourism;` 并注意外键约束的限制。
 
 ## 四、合并到 `main` 的流程
 

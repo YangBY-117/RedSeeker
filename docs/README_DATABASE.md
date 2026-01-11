@@ -1,5 +1,5 @@
 # Database
-
+在SCHEMA_DATABASE.md中已给出数据库格式说明。
 该目录放置数据库建表脚本、迁移文件与本地测试数据库文件（以 `red_tourism.db` 为本地单一测试 DB）。
 
 目录结构（说明）
@@ -17,9 +17,9 @@
 - `users.db`：历史可选的分离用户 DB（已从仓库移除），如需导入请参见 `migrate_users_to_red_tourism.js`。
 - 迁移脚本位于 `migrations/`，请根据目标数据库（合并或分离）选择运行方式。
 
-迁移与初始化策略（两种常见做法）
+迁移与初始化策略
 
-方案 A — 合并到单一 DB（推荐用于本地集成测试）
+合并到单一 DB（推荐用于本地集成测试）
 - 将 `red_tourism.db` 作为主数据库，在其上运行迁移以创建 `users` 等表。
 
 示例：
@@ -34,23 +34,7 @@ node scripts/create_test_users.js --db red_tourism.db --count 10
 
 优点：外键引用（如 `attractions(id)`）直接生效，便于后端本地测试。
 
-方案 B — 保持独立 DB（可选，适用于数据隔离或生产模拟）
-- 把用户数据放在 `users.db`（历史做法），景点数据保留在 `red_tourism.db`；需要跨库查询时在 sqlite 会话中 `ATTACH`。
 
-示例：
-```powershell
-cd database
-# 在 users.db 上运行迁移，创建 users 与 ratings 表
-sqlite3 users.db ".read migrations/002_users_and_ratings.sql"
-
-# 在会话中附加 red_tourism.db 以便联合查询
-sqlite3 users.db
-sqlite> ATTACH 'red_tourism.db' AS tourism;
-sqlite> SELECT u.username, t.name
-         FROM users u
-         JOIN tourism.attractions t ON t.id = 1
-         LIMIT 10;
-```
 
 注意：迁移脚本中如果有外键引用 `attractions(id)`，在运行迁移之前要确保目标 DB 已含有 `attractions` 表，或将迁移运行到含有该表的 DB（通常是 `red_tourism.db`）。
 
