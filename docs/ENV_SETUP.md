@@ -9,7 +9,6 @@
 - **Maven & Node.js**:
     - **推荐**: 使用项目自带的 `setup_tools.ps1` 脚本自动配置（无需手动安装）
     - 自行安装要求: Maven 3.9+, Node.js 20+
-- **数据库**: *选型中，暂不需要安装*
 
 ## 2. 快速启动脚本 (环境自动配置)
 
@@ -28,50 +27,33 @@
 
 ### 3.1 启动准备
 
-确保已安装 JDK 17+，并已在当前终端运行了环境配置脚本。
+````markdown
+# 本地环境与数据库要求（简洁）
 
-### 3.2 本地运行
+仅保留本地运行与数据库相关的必要说明。
 
-进入 `backend/` 目录：
+先决条件
+- `Node.js` >= 20（含 `npm`）
+- `sqlite3` 命令行客户端（用于执行迁移 SQL）
+- `Python` >= 3.8（用于可选样例脚本 `001_init_example.py`）
 
+数据库与初始化（本地测试）
+- 仓库采用“单一 DB”本地测试方案：`database/red_tourism.db` 包含景点与用户相关表（推荐）。
+- 迁移脚本：`database/migrations/002_users_and_ratings.sql`（将在目标 DB 中创建 `users`、`user_browse_history`、`attraction_ratings` 等表）。
+- 自动初始化脚本（推荐）：`database/init_local.ps1` — 在 `red_tourism.db` 上应用迁移并生成测试用户。
+- 如需从历史分离的 `users.db` 导入，请使用：`database/migrate_users_to_red_tourism.js`。
+
+快速示例命令（PowerShell）
 ```powershell
-# 编译并安装依赖
-mvn clean install
-
-# 启动应用
-mvn spring-boot:run
-```
-
-> **特别说明**: 由于数据库选型未定，后端已配置为排除 `DataSourceAutoConfiguration`，启动时**不需要**连接数据库。
-
-## 4. 前端（Vue 3 + Vite）环境配置
-
-### 4.1 启动准备
-
-进入 `frontend/` 目录（确保已运行环境配置脚本）：
-
-```powershell
-# 安装依赖
+cd database
 npm install
-
-# 启动开发服务器
-npm run dev
+# 在 red_tourism.db 上应用迁移并生成 10 个测试用户（推荐）
+.\init_local.ps1 -Count 10
 ```
 
-## 5. 数据库环境配置
+要点说明
+- 请确保 `sqlite3` 可用以使 SQL 迁移生效；若缺失脚本会给出警告并跳过 `.read` 步骤。
+- SQLite 对跨附加数据库（`ATTACH`）的外键完整性支持有限；若依赖 DB 层外键约束，请使用合并到单一 DB 的方案（即在 `red_tourism.db` 上运行迁移）。
 
-**状态：选型未定**
+````
 
-- 目前开发阶段**暂不需要安装数据库**。
-- 后端代码已做特殊处理，可以在无数据库状态下运行。
-- 待选型确定后，将在此处更新具体的安装指南。
-
-## 6. 常见问题排查
-
-- **端口冲突**：确认后端/前端默认端口未被占用，必要时修改配置
-- **依赖安装失败**：尝试清理缓存后重装（`npm cache clean --force`）
-- **数据库连接失败**：检查数据库是否启动、账号密码与连接地址是否正确
-
----
-
-如有新的环境要求或工具链变更，请及时更新本文档。
