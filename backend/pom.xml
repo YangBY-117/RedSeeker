@@ -34,6 +34,12 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- Zhipu AI SDK -->
+    <dependency>
+        <groupId>cn.bigmodel.openapi</groupId>
+        <artifactId>oapi-java-sdk</artifactId>
+        <version>release-V4-2.0.2</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

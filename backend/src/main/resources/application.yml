@@ -8,3 +8,8 @@ spring:
 
 server:
   port: 8080
+
+zhipu:
+  api:
+    key: "dc429f40fc2d4c42af23eed404a1ba2b.d4Bq0fTcEyIYrEMc" # 请替换为您的API Key
+

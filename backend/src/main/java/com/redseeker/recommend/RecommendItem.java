@@ -1,8 +1,12 @@
 package com.redseeker.recommend;
 
+import java.util.List;
+
 public class RecommendItem {
+  private String id;
   private String name;
   private String category; // e.g., "Revolutionary Site", "Museum"
+  private List<String> tags;
   private double score; // Matching score (0.0 - 1.0)
   private String history; // Historical background
   private String reason; // Recommendation reason
@@ -10,12 +14,22 @@ public class RecommendItem {
   public RecommendItem() {
   }
 
-  public RecommendItem(String name, String category, double score, String history, String reason) {
+  public RecommendItem(String id, String name, String category, List<String> tags, double score, String history, String reason) {
+    this.id = id;
     this.name = name;
     this.category = category;
+    this.tags = tags;
     this.score = score;
     this.history = history;
     this.reason = reason;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
   }
 
   public String getName() {
@@ -32,6 +46,14 @@ public class RecommendItem {
 
   public void setCategory(String category) {
     this.category = category;
+  }
+
+  public List<String> getTags() {
+    return tags;
+  }
+
+  public void setTags(List<String> tags) {
+    this.tags = tags;
   }
 
   public double getScore() {

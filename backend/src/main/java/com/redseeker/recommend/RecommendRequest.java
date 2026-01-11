@@ -6,7 +6,9 @@ import java.util.List;
 public class RecommendRequest {
   @NotBlank(message = "city is required")
   private String city;
+  private Long userId;
   private List<String> preferences;
+
   private String travelStyle;
   private Integer days;
 
@@ -16,6 +18,14 @@ public class RecommendRequest {
 
   public void setCity(String city) {
     this.city = city;
+  }
+
+  public Long getUserId() {
+    return userId;
+  }
+
+  public void setUserId(Long userId) {
+    this.userId = userId;
   }
 
   public List<String> getPreferences() {

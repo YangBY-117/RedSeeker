@@ -11,6 +11,8 @@ D:\university\Term2S1\codes_data_structure\course_design\RedSeeker\backend\src\m
 D:\university\Term2S1\codes_data_structure\course_design\RedSeeker\backend\src\main\java\com\redseeker\route\package-info.java
 D:\university\Term2S1\codes_data_structure\course_design\RedSeeker\backend\src\main\java\com\redseeker\recommend\RecommendController.java
 D:\university\Term2S1\codes_data_structure\course_design\RedSeeker\backend\src\main\java\com\redseeker\recommend\RecommendService.java
+D:\university\Term2S1\codes_data_structure\course_design\RedSeeker\backend\src\main\java\com\redseeker\recommend\AiService.java
+D:\university\Term2S1\codes_data_structure\course_design\RedSeeker\backend\src\main\java\com\redseeker\recommend\ZhipuAiServiceImpl.java
 D:\university\Term2S1\codes_data_structure\course_design\RedSeeker\backend\src\main\java\com\redseeker\recommend\AiPlanRequest.java
 D:\university\Term2S1\codes_data_structure\course_design\RedSeeker\backend\src\main\java\com\redseeker\place\package-info.java
 D:\university\Term2S1\codes_data_structure\course_design\RedSeeker\backend\src\main\java\com\redseeker\common\ApiResponse.java
