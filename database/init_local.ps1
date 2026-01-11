@@ -29,8 +29,12 @@ Set-Location $scriptDir
 if (-not (Get-Command sqlite3 -ErrorAction SilentlyContinue)) {
     Write-Warning "未检测到 sqlite3 命令；请先安装 sqlite3 或使用仓库提供的 setup_tools.ps1 来获得可用环境。脚本将仍尝试继续（若无 sqlite3 将跳过 .read 步骤）。"
 } else {
-    Write-Host "[init_local] 运行迁移：migrations/002_users_and_ratings.sql -> red_tourism.db"
-    sqlite3 red_tourism.db ".read migrations/002_users_and_ratings.sql"
+    Write-Host "[init_local] 运行迁移：按名称顺序依次应用 migrations/*.sql -> red_tourism.db"
+    $migrations = Get-ChildItem -Path .\migrations -Filter *.sql | Sort-Object Name
+    foreach ($m in $migrations) {
+        Write-Host "[init_local] 应用: $($m.Name)"
+        sqlite3 red_tourism.db ".read migrations/$($m.Name)"
+    }
 }
 
 if (-not (Test-Path "node_modules")) {

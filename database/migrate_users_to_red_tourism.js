@@ -23,9 +23,9 @@ async function run() {
   const fromPath = path.resolve(opts.from);
   const toPath = path.resolve(opts.to);
 
-  if (!fs.existsSync(fromPath)) {
-    console.error(`[migrate] source DB not found: ${fromPath}`);
-    process.exit(1);
+  const hasSource = fs.existsSync(fromPath);
+  if (!hasSource) {
+    console.warn(`[migrate] source DB not found, will skip data copy: ${fromPath}`);
   }
 
   if (!fs.existsSync(toPath)) {
@@ -37,57 +37,68 @@ async function run() {
   db.serialize(() => {
     db.run('PRAGMA foreign_keys = ON;');
 
-    // Ensure target has users/ratings tables by running migration SQL if needed
-    const migrationsSql = fs.readFileSync(path.join(__dirname, 'migrations', '002_users_and_ratings.sql'), 'utf8');
-    try {
-      db.exec(migrationsSql);
-      console.log('[migrate] Applied migrations to target DB');
-    } catch (e) {
-      console.warn('[migrate] Warning applying migrations (may already exist):', e.message);
+    // Ensure target has migration tables by running all SQL files in migrations/
+    const migrationFiles = fs.readdirSync(path.join(__dirname, 'migrations'))
+      .filter(f => f.endsWith('.sql'))
+      .sort();
+
+    for (const mf of migrationFiles) {
+      try {
+        const sql = fs.readFileSync(path.join(__dirname, 'migrations', mf), 'utf8');
+        db.exec(sql);
+        console.log(`[migrate] Applied migration: ${mf}`);
+      } catch (e) {
+        console.warn(`[migrate] Warning applying migration ${mf} (may already exist):`, e.message);
+      }
     }
 
-    // Attach source DB
-    db.run(`ATTACH DATABASE ? AS fromdb`, [fromPath], function(err) {
-      if (err) {
-        console.error('[migrate] Failed to attach source DB:', err.message);
-        process.exit(1);
-      }
+    // If source DB exists, attach and copy data; otherwise skip data copy
+    if (hasSource) {
+      db.run(`ATTACH DATABASE ? AS fromdb`, [fromPath], function(err) {
+        if (err) {
+          console.error('[migrate] Failed to attach source DB:', err.message);
+          process.exit(1);
+        }
 
-      db.run('BEGIN TRANSACTION');
+        db.run('BEGIN TRANSACTION');
 
-      // Copy users
-      db.run(`INSERT OR IGNORE INTO users (id, username, password, created_at, last_login)
-              SELECT id, username, password, created_at, last_login FROM fromdb.users`, function(err) {
-        if (err) console.error('[migrate] Copy users error:', err.message);
-        else console.log('[migrate] users copied');
-      });
+        // Copy users
+        db.run(`INSERT OR IGNORE INTO users (id, username, password, created_at, last_login)
+                SELECT id, username, password, created_at, last_login FROM fromdb.users`, function(err) {
+          if (err) console.error('[migrate] Copy users error:', err.message);
+          else console.log('[migrate] users copied');
+        });
 
-      // Copy user_browse_history
-      db.run(`INSERT OR IGNORE INTO user_browse_history (id, user_id, attraction_id, browse_time)
-              SELECT id, user_id, attraction_id, browse_time FROM fromdb.user_browse_history`, function(err) {
-        if (err) console.error('[migrate] Copy user_browse_history error:', err.message);
-        else console.log('[migrate] user_browse_history copied');
-      });
+        // Copy user_browse_history
+        db.run(`INSERT OR IGNORE INTO user_browse_history (id, user_id, attraction_id, browse_time)
+                SELECT id, user_id, attraction_id, browse_time FROM fromdb.user_browse_history`, function(err) {
+          if (err) console.error('[migrate] Copy user_browse_history error:', err.message);
+          else console.log('[migrate] user_browse_history copied');
+        });
 
-      // Copy attraction_ratings
-      db.run(`INSERT OR IGNORE INTO attraction_ratings (id, attraction_id, user_id, rating, comment, created_at)
-              SELECT id, attraction_id, user_id, rating, comment, created_at FROM fromdb.attraction_ratings`, function(err) {
-        if (err) console.error('[migrate] Copy attraction_ratings error:', err.message);
-        else console.log('[migrate] attraction_ratings copied');
-      });
+        // Copy attraction_ratings
+        db.run(`INSERT OR IGNORE INTO attraction_ratings (id, attraction_id, user_id, rating, comment, created_at)
+                SELECT id, attraction_id, user_id, rating, comment, created_at FROM fromdb.attraction_ratings`, function(err) {
+          if (err) console.error('[migrate] Copy attraction_ratings error:', err.message);
+          else console.log('[migrate] attraction_ratings copied');
+        });
 
-      db.run('COMMIT', function(err) {
-        if (err) console.error('[migrate] Commit error:', err.message);
-        else console.log('[migrate] Migration transaction committed');
+        db.run('COMMIT', function(err) {
+          if (err) console.error('[migrate] Commit error:', err.message);
+          else console.log('[migrate] Migration transaction committed');
 
-        // Detach and close
-        db.run(`DETACH DATABASE fromdb`, function(err) {
-          if (err) console.error('[migrate] Detach error:', err.message);
-          db.close();
-          console.log('[migrate] Done. You may now remove the source DB file if desired.');
+          // Detach and close
+          db.run(`DETACH DATABASE fromdb`, function(err) {
+            if (err) console.error('[migrate] Detach error:', err.message);
+            db.close();
+            console.log('[migrate] Done. You may now remove the source DB file if desired.');
+          });
         });
       });
-    });
+    } else {
+      db.close();
+      console.log('[migrate] No source DB provided; migrations applied to target only.');
+    }
   });
 }
 
