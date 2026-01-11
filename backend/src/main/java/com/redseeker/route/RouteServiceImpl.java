@@ -80,6 +80,33 @@ public class RouteServiceImpl implements RouteService {
   }
 
   @Override
+  public RouteResult calculateRoute(List<Point> points) {
+    if (points == null || points.size() < 2) {
+      return new RouteResult(0, 0, List.of(), "");
+    }
+    List<RoutePath> legs = new ArrayList<>();
+    List<String> polylines = new ArrayList<>();
+    double totalDistance = 0;
+    double totalDuration = 0;
+
+    for (int i = 0; i < points.size() - 1; i++) {
+      Point start = points.get(i);
+      Point end = points.get(i + 1);
+      LocationDto origin = new LocationDto(start.getLongitude(), start.getLatitude(), null);
+      LocationDto destination = new LocationDto(end.getLongitude(), end.getLatitude(), null);
+      RoutePath routePath = amapClient.planRoute(origin, destination, "driving");
+      legs.add(routePath);
+      totalDistance += routePath.getDistance();
+      totalDuration += routePath.getDuration();
+      if (routePath.getPolyline() != null && !routePath.getPolyline().isBlank()) {
+        polylines.add(routePath.getPolyline());
+      }
+    }
+
+    return new RouteResult(totalDistance, totalDuration, legs, String.join(";", polylines));
+  }
+
+  @Override
   public LocationDto currentLocation() {
     return new LocationDto(121.4737, 31.2304, "上海市黄浦区人民广场");
   }

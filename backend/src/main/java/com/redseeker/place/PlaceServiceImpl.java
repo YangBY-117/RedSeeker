@@ -31,6 +31,22 @@ public class PlaceServiceImpl implements PlaceService {
     return fallbackPlaces(normalizedKeyword, normalizedRegion, normalizedEvent, minHeat, maxHeat, sortBy, limit);
   }
 
+  @Override
+  public List<PlaceInfo> queryPlaces(PlaceQueryCondition condition) {
+    if (condition == null) {
+      return search(null, null, null, null, null, "heat", 10);
+    }
+    return search(
+        condition.getKeyword(),
+        condition.getRegion(),
+        condition.getEvent(),
+        condition.getMinHeat(),
+        condition.getMaxHeat(),
+        condition.getSortBy(),
+        condition.getLimit()
+    );
+  }
+
   private List<PlaceInfo> fetchPlacesFromDatabase(String keyword, String region, String event, Integer minHeat,
       Integer maxHeat, String sortBy, int limit) {
     if (!Files.exists(Path.of(DATABASE_PATH))) {

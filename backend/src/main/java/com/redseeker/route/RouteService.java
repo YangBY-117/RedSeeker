@@ -5,5 +5,7 @@ public interface RouteService {
 
   RouteMultipleResponse planMultiple(RouteMultipleRequest request);
 
+  RouteResult calculateRoute(java.util.List<Point> points);
+
   LocationDto currentLocation();
 }
