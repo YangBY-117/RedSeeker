@@ -1,120 +1,203 @@
-# Database
-在SCHEMA_DATABASE.md中已给出数据库格式说明。
-该目录放置数据库建表脚本、迁移文件与本地测试数据库文件（以 `red_tourism.db` 为本地单一测试 DB）。
+# Red Tourism Database Schema Documentation
 
-目录结构（说明）
-- `migrations/`：SQL 迁移脚本（例如 `001_init.sql`, `002_users_and_ratings.sql`）
-- `scripts/`：初始化与测试脚本（例如 `create_test_users.js`）
-- `package.json`：脚本依赖（`bcryptjs`, `sqlite3`）
-- `red_tourism.db`：景点数据库（包含 `attractions` 表，用于推荐与查询），仓库采用将用户数据合并到 `red_tourism.db` 的单一本地测试方案
-*- `migrate_users_to_red_tourism.js`：用于把历史 `users.db` 文件的数据导入 `red_tourism.db`（如果你有历史 `users.db`，可使用此脚本）
+## 概述
 
-本文档目的
-- 详细说明如何使用 `users.db` 与 `red_tourism.db`、如何运行迁移、如何生成测试用户，以及如何在本地把数据库与后端进行验证性集成（仅供本地测试使用）。
+本文档详细介绍了 `red_tourism.db` 的数据库结构。该数据库采用 SQLite 存储，包含了红色旅游景点信息、用户信息、历史事件、旅游日记及相关互动数据（评分、浏览历史等）。
 
-主要概念
-- `red_tourism.db`：景点主数据（仓库中已有，包含 `attractions` 等表），同时也作为本地用户数据的合并目标（`users` / `user_browse_history` / `attraction_ratings` 表）。
-- `users.db`：历史可选的分离用户 DB（已从仓库移除），如需导入请参见 `migrate_users_to_red_tourism.js`。
-- 迁移脚本位于 `migrations/`，请根据目标数据库（合并或分离）选择运行方式。
+**数据库文件路径**: `database/red_tourism.db` (请根据实际部署调整)
 
-迁移与初始化策略
+## 表结构概览
 
-合并到单一 DB（推荐用于本地集成测试）
-- 将 `red_tourism.db` 作为主数据库，在其上运行迁移以创建 `users` 等表。
+数据库包含以下主要数据表：
 
-示例：
-```powershell
-cd database
-# 在 red_tourism.db 上运行迁移（会在该文件中创建 users 等表）
-sqlite3 red_tourism.db ".read migrations/002_users_and_ratings.sql"
+1.  **attractions**: 景点基础信息表
+2.  **historical_events**: 历史事件表
+3.  **attraction_events**: 景点与历史事件关联表
+4.  **users**: 用户表
+5.  **user_browse_history**: 用户浏览景点历史表
+6.  **attraction_ratings**: 景点评分表
+7.  **travel_diaries**: 旅游日记表
+8.  **diary_media**: 日记多媒体资源表
+9.  **diary_attractions**: 日记与景点关联表
+10. **diary_ratings**: 日记评分表
+11. **diary_browse_history**: 日记浏览历史表
+12. **travel_diaries_fts**: 日记全文检索引擎表
 
-# 生成测试用户并写入 red_tourism.db
-node scripts/create_test_users.js --db red_tourism.db --count 10
-```
+---
 
-优点：外键引用（如 `attractions(id)`）直接生效，便于后端本地测试。
+## 详细表结构
 
+### 1. 景点表 (attractions)
 
+存储所有红色旅游景点的基本信息。
 
-注意：迁移脚本中如果有外键引用 `attractions(id)`，在运行迁移之前要确保目标 DB 已含有 `attractions` 表，或将迁移运行到含有该表的 DB（通常是 `red_tourism.db`）。
+| 字段名 | 类型 | 描述 | 备注 |
+|---|---|---|---|
+| id | INTEGER | 主键ID | 自增 |
+| old_id | INTEGER | 旧系统ID | 迁移用途 |
+| name | TEXT | 景点名称 | |
+| address | TEXT | 地址 | |
+| longitude | REAL | 经度 | |
+| latitude | REAL | 纬度 | |
+| category | INTEGER | 类别ID | |
+| brief_intro | TEXT | 简介 | |
+| historical_background | TEXT | 历史背景 | |
+| per_capita_consumption | REAL | 人均消费 | |
+| business_hours | TEXT | 营业时间 | |
+| created_at | TEXT | 创建时间 | |
+| updated_at | TEXT | 更新时间 | |
+| images | TEXT | 图片路径列表 | JSON 格式存储 |
 
-生成测试用户
-- 脚本位置：`scripts/create_test_users.js`。
-- 依赖安装：
-```powershell
-cd database
-npm install
-```
-- 运行脚本：
-```powershell
-# 在默认 red_tourism.db 生成 10 个用户（仓库已采用合并方案）
-node scripts/create_test_users.js --count 10
+### 2. 历史事件表 (historical_events)
 
-# 若你有历史的 users.db 并想导入到 red_tourism.db，可先把文件放到该目录下，然后运行：
-node migrate_users_to_red_tourism.js --from users.db --to red_tourism.db
-```
+存储与红色旅游相关的历史事件。
 
-脚本说明：
-- 密码默认 `password123`，使用 bcrypt 哈希（`bcryptjs`）。
-- 使用 `INSERT OR IGNORE`，重复运行不会新增同名用户。
+| 字段名 | 类型 | 描述 | 备注 |
+|---|---|---|---|
+| id | INTEGER | 主键ID | |
+| event_name | TEXT | 事件名称 | |
+| start_year | INTEGER | 开始年份 | |
+| end_year | INTEGER | 结束年份 | |
+| description | TEXT | 事件描述 | |
+| period | TEXT | 历史时期 | 如：土地革命时期 |
 
-数据库文件说明
-- `database/red_tourism.db`：景点数据，包含 `attractions` 表与详细字段（`id`, `name`, `address`, `longitude`, `latitude`, `category`, `brief_intro`, 等）。
-- 历史说明：`users.db` 曾被用作分离的用户 DB（可选），但已从仓库移除；推荐使用合并到 `red_tourism.db` 的方案以便在本地测试时外键完整性生效。
+### 3. 景点-事件关联表 (attraction_events)
 
-后端本地集成示例（Spring Boot）
-- 在 `backend/pom.xml` 中添加 SQLite JDBC 依赖：
-```xml
-<dependency>
-  <groupId>org.xerial</groupId>
-  <artifactId>sqlite-jdbc</artifactId>
-  <version>3.40.0.0</version>
-</dependency>
-```
+建立景点与历史事件的多对多关系。
 
-- 在 `backend/src/main/resources/application.yml` 中配置（示例）：
-```yaml
-spring:
-  datasource:
-    url: jdbc:sqlite:${project.basedir}/database/red_tourism.db
-    driver-class-name: org.sqlite.JDBC
-  jdbc:
-    initialize-schema: false
-```
+| 字段名 | 类型 | 描述 | 备注 |
+|---|---|---|---|
+| id | INTEGER | 主键ID | 自增 |
+| attraction_id | INTEGER | 景点ID | 关联 attractions.id |
+| event_id | INTEGER | 事件ID | 关联 historical_events.id |
 
-注意：SQLite 与 JPA/Hibernate 的兼容性有限，建议本地测试时使用 `JdbcTemplate` 或原生 JDBC；如需长期使用，请将生产环境数据库替换为 MySQL/Postgres 等。
+### 4. 用户表 (users)
 
-验证与常用 SQL
-- 列出用户：
-```sql
-SELECT id, username, created_at, last_login FROM users LIMIT 20;
-```
-- 计算景点评价统计：
-```sql
-SELECT attraction_id, COUNT(*) as total, ROUND(AVG(rating),2) as average_rating
-FROM attraction_ratings GROUP BY attraction_id ORDER BY total DESC LIMIT 20;
-```
-- 查询景点详情（从 red_tourism.db）：
-```sql
-SELECT id, name, address, brief_intro FROM attractions WHERE id = 1;
-```
+存储注册用户信息。
 
-迁移维护说明
-- 所有迁移脚本统一放在 `migrations/`，请在每次修改表结构时新增版本化 SQL文件。
-- 若希望由后端自动执行迁移，可使用 Flyway：
-  - 在 `backend/pom.xml` 添加 `org.flywaydb:flyway-core` 依赖；
-  - 在 `application.yml` 中设置 `spring.flyway.locations: filesystem:${project.basedir}/database/migrations`。
+| 字段名 | 类型 | 描述 | 备注 |
+|---|---|---|---|
+| id | INTEGER | 用户ID | 自增主键 |
+| username | TEXT | 用户名 | 唯一 |
+| password | TEXT | 密码 | bcrypt 加密 |
+| created_at | DATETIME | 注册时间 | 默认为当前时间 |
+| last_login | DATETIME | 最后登录时间 | |
 
-故障排查要点
-- 外键错误（找不到 `attractions`）：说明迁移目标 DB 中没有 `attractions` 表，解决方法见“迁移与初始化策略”。
-- 插入用户失败：请确认脚本的 `--db` 参数是否指向预期文件，或检查文件权限。
+**预置测试用户**:
+*   用户名: `user1` ~ `user10`
+*   密码: `password123` (已加密)
 
-本次仓库变更（与数据库相关）
-- 新增 `migrations/002_users_and_ratings.sql`（创建 `users`、`user_browse_history`、`attraction_ratings`）。
-- 新增 `scripts/create_test_users.js` 与 `package.json`（用于生成测试用户并管理依赖）。
+### 5. 用户浏览历史表 (user_browse_history)
 
+记录用户浏览景点的历史，用于推荐算法。
 
-# Database
+| 字段名 | 类型 | 描述 | 备注 |
+|---|---|---|---|
+| id | INTEGER | 记录ID | 自增 |
+| user_id | INTEGER | 用户ID | 外键 |
+| attraction_id | INTEGER | 景点ID | 外键 |
+| browse_time | DATETIME | 浏览时间 | 默认为当前时间 |
 
-- 该目录放置数据库建表脚本和迁移文件，以及数据库db文件。
-- 由数据库负责人维护。
+### 6. 景点评价表 (attraction_ratings)
+
+存储用户对景点的评分和评论。
+
+| 字段名 | 类型 | 描述 | 备注 |
+|---|---|---|---|
+| id | INTEGER | 评价ID | 自增 |
+| attraction_id | INTEGER | 景点ID | 外键 |
+| user_id | INTEGER | 用户ID | 外键 |
+| rating | INTEGER | 评分 | 1-5分 |
+| comment | TEXT | 评论内容 | |
+| created_at | DATETIME | 创建时间 | |
+
+### 7. 旅游日记表 (travel_diaries)
+
+存储用户发布的游记。支持全文检索。
+
+| 字段名 | 类型 | 描述 | 备注 |
+|---|---|---|---|
+| id | INTEGER | 日记ID | 自增 |
+| user_id | INTEGER | 作者ID | 外键 |
+| title | TEXT | 标题 | |
+| content | TEXT | 正文 | FTS5 索引 |
+| content_compressed | BLOB | 压缩正文 | 可选，gzip压缩 |
+| destination | TEXT | 目的地 | |
+| travel_date | DATE | 旅游日期 | |
+| view_count | INTEGER | 浏览量 | 默认为0 |
+| average_rating | REAL | 平均评分 | |
+| total_ratings | INTEGER | 总评分数 | |
+| created_at | DATETIME | 发布时间 | |
+| updated_at | DATETIME | 更新时间 | |
+
+**全文检索 (FTS5)**:
+表 `travel_diaries_fts` 提供了对 `title`, `content`, `destination` 的全文检索功能。
+数据库包含触发器，当 `travel_diaries` 更新时自动同步 FTS 索引。
+
+### 8. 日记媒体文件表 (diary_media)
+
+存储日记关联的图片或视频文件信息。
+
+| 字段名 | 类型 | 描述 | 备注 |
+|---|---|---|---|
+| id | INTEGER | 媒体ID | 自增 |
+| diary_id | INTEGER | 日记ID | 外键 |
+| media_type | TEXT | 类型 | 'image' 或 'video' |
+| file_path | TEXT | 文件路径 | |
+| file_size | INTEGER | 文件大小 | 字节 |
+| file_compressed | BLOB | 压缩文件 | 可选 |
+| thumbnail_path | TEXT | 缩略图路径 | 视频专用 |
+| display_order | INTEGER | 显示顺序 | |
+| created_at | DATETIME | 上传时间 | |
+
+### 9. 日记关联景点表 (diary_attractions)
+
+关联日记中提及的景点。
+
+| 字段名 | 类型 | 描述 | 备注 |
+|---|---|---|---|
+| id | INTEGER | 记录ID | 自增 |
+| diary_id | INTEGER | 日记ID | 外键 |
+| attraction_id | INTEGER | 景点ID | 外键 |
+
+### 10. 日记评分表 (diary_ratings)
+
+用户对日记的评分。
+
+| 字段名 | 类型 | 描述 | 备注 |
+|---|---|---|---|
+| id | INTEGER | 评分ID | 自增 |
+| diary_id | INTEGER | 日记ID | 外键 |
+| user_id | INTEGER | 用户ID | 外键 |
+| rating | INTEGER | 评分 | 1-5分 |
+| created_at | DATETIME | 评分时间 | |
+
+### 11. 日记浏览记录表 (diary_browse_history)
+
+记录日记的被浏览情况。
+
+| 字段名 | 类型 | 描述 | 备注 |
+|---|---|---|---|
+| id | INTEGER | 记录ID | 自增 |
+| diary_id | INTEGER | 日记ID | 外键 |
+| user_id | INTEGER | 用户ID | 可为空(匿名) |
+| browse_time | DATETIME | 浏览时间 | |
+
+## 索引优化
+
+为了提高查询效率，已在以下字段建立索引：
+
+*   `users`: username
+*   `user_browse_history`: user_id, attraction_id, browse_time
+*   `attraction_ratings`: attraction_id, user_id
+*   `travel_diaries`: user_id, destination, created_at, view_count, average_rating
+*   `diary_media`: diary_id, media_type
+*   `diary_attractions`: diary_id, attraction_id
+*   `diary_ratings`: diary_id, user_id
+*   `diary_browse_history`: diary_id, user_id, browse_time
+
+## 注意事项
+
+1.  **FTS5 全文检索**: 日记搜索功能依赖 SQLite 的 FTS5 扩展。
+2.  **表名变更**: 原 `red_tourism` 已更名为 `attractions`，原 `red_tourism_events` 已更名为 `attraction_events`。
+3.  **安全性**: 用户密码均经过 bcrypt 哈希处理。
