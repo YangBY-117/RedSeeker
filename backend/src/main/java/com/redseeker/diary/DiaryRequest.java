@@ -6,13 +6,11 @@ import java.util.List;
 public class DiaryRequest {
   @NotBlank
   private String title;
+  private Long userId;
   private String content;
   private List<String> images;
-  private List<String> tags;
   private Long attractionId;
-  private Boolean checkedIn;
-  private String checkInNote;
-  private String template;
+  private Boolean publicEntry;
 
   public String getTitle() {
     return title;
@@ -20,6 +18,14 @@ public class DiaryRequest {
 
   public void setTitle(String title) {
     this.title = title;
+  }
+
+  public Long getUserId() {
+    return userId;
+  }
+
+  public void setUserId(Long userId) {
+    this.userId = userId;
   }
 
   public String getContent() {
@@ -38,14 +44,6 @@ public class DiaryRequest {
     this.images = images;
   }
 
-  public List<String> getTags() {
-    return tags;
-  }
-
-  public void setTags(List<String> tags) {
-    this.tags = tags;
-  }
-
   public Long getAttractionId() {
     return attractionId;
   }
@@ -54,27 +52,11 @@ public class DiaryRequest {
     this.attractionId = attractionId;
   }
 
-  public Boolean getCheckedIn() {
-    return checkedIn;
+  public Boolean getPublicEntry() {
+    return publicEntry;
   }
 
-  public void setCheckedIn(Boolean checkedIn) {
-    this.checkedIn = checkedIn;
-  }
-
-  public String getCheckInNote() {
-    return checkInNote;
-  }
-
-  public void setCheckInNote(String checkInNote) {
-    this.checkInNote = checkInNote;
-  }
-
-  public String getTemplate() {
-    return template;
-  }
-
-  public void setTemplate(String template) {
-    this.template = template;
+  public void setPublicEntry(Boolean publicEntry) {
+    this.publicEntry = publicEntry;
   }
 }

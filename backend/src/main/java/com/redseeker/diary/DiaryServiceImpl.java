@@ -21,10 +21,10 @@ public class DiaryServiceImpl implements DiaryService {
   public DiaryEntry create(DiaryRequest request) {
     Long id = idGenerator.getAndIncrement();
     Instant now = Instant.now();
-    String template = resolveTemplate(request.getTemplate(), request.getAttractionId());
-    DiaryEntry entry = new DiaryEntry(id, request.getTitle(), request.getContent(),
-        safeList(request.getImages()), safeList(request.getTags()), request.getAttractionId(),
-        Boolean.TRUE.equals(request.getCheckedIn()), request.getCheckInNote(), template, false, now, now);
+    Long userId = resolveUserId(request.getUserId());
+    boolean isPublic = Boolean.TRUE.equals(request.getPublicEntry());
+    DiaryEntry entry = new DiaryEntry(id, userId, request.getTitle(), request.getContent(),
+        safeList(request.getImages()), request.getAttractionId(), isPublic, now, now);
     if (repository.isDatabaseReady()) {
       return repository.insert(entry);
     }
@@ -36,17 +36,15 @@ public class DiaryServiceImpl implements DiaryService {
   public DiaryEntry update(Long id, DiaryRequest request) {
     DiaryEntry existing = get(id);
     Instant now = Instant.now();
-    String template = resolveTemplate(request.getTemplate(), request.getAttractionId());
+    Long userId = request.getUserId() != null ? request.getUserId() : existing.getUserId();
+    boolean isPublic = request.getPublicEntry() != null ? request.getPublicEntry() : existing.isPublicEntry();
     DiaryEntry updated = new DiaryEntry(id,
+        userId,
         request.getTitle() != null ? request.getTitle() : existing.getTitle(),
         request.getContent() != null ? request.getContent() : existing.getContent(),
         request.getImages() != null ? request.getImages() : existing.getImages(),
-        request.getTags() != null ? request.getTags() : existing.getTags(),
         request.getAttractionId() != null ? request.getAttractionId() : existing.getAttractionId(),
-        request.getCheckedIn() != null ? request.getCheckedIn() : existing.isCheckedIn(),
-        request.getCheckInNote() != null ? request.getCheckInNote() : existing.getCheckInNote(),
-        template != null ? template : existing.getTemplate(),
-        existing.isShared(),
+        isPublic,
         existing.getCreatedAt(),
         now);
     if (repository.isDatabaseReady()) {
@@ -82,9 +80,8 @@ public class DiaryServiceImpl implements DiaryService {
   @Override
   public DiaryEntry share(Long id) {
     DiaryEntry entry = get(id);
-    DiaryEntry shared = new DiaryEntry(entry.getId(), entry.getTitle(), entry.getContent(), entry.getImages(),
-        entry.getTags(), entry.getAttractionId(), entry.isCheckedIn(), entry.getCheckInNote(), entry.getTemplate(),
-        true, entry.getCreatedAt(), Instant.now());
+    DiaryEntry shared = new DiaryEntry(entry.getId(), entry.getUserId(), entry.getTitle(), entry.getContent(),
+        entry.getImages(), entry.getAttractionId(), true, entry.getCreatedAt(), Instant.now());
     if (repository.isDatabaseReady()) {
       return repository.update(shared);
     }
@@ -96,13 +93,7 @@ public class DiaryServiceImpl implements DiaryService {
     return input == null ? new ArrayList<>() : new ArrayList<>(input);
   }
 
-  private String resolveTemplate(String template, Long attractionId) {
-    if (template != null && !template.isBlank()) {
-      return template;
-    }
-    if (attractionId == null) {
-      return "标题\\n- 今日研学主题\\n- 重点收获\\n- 心得体会";
-    }
-    return "景点记录" + attractionId + "\\n- 历史脉络\\n- 讲解要点\\n- 打卡感想\\n- 后续行动";
+  private Long resolveUserId(Long requestedUserId) {
+    return requestedUserId != null ? requestedUserId : 1L;
   }
 }

@@ -9,8 +9,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -24,11 +29,20 @@ public class DiaryRepository {
       "diaries",
       "travel_diary"
   );
+  private static final String IMAGES_TABLE = "diary_images";
+  private static final DateTimeFormatter SQLITE_DATE_FORMATTER = new DateTimeFormatterBuilder()
+      .appendPattern("yyyy-MM-dd HH:mm:ss")
+      .optionalStart()
+      .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
+      .optionalEnd()
+      .toFormatter();
 
   private final String tableName;
+  private final boolean hasImagesTable;
 
   public DiaryRepository() {
     this.tableName = resolveTableName().orElse(null);
+    this.hasImagesTable = resolveImagesTable();
   }
 
   public boolean isDatabaseReady() {
@@ -37,30 +51,28 @@ public class DiaryRepository {
 
   public DiaryEntry insert(DiaryEntry entry) {
     String sql = "INSERT INTO " + tableName
-        + " (title, content, images, tags, attraction_id, checked_in, check_in_note, template, shared, created_at, updated_at)"
-        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        + " (user_id, attraction_id, title, content, is_public, created_at, updated_at)"
+        + " VALUES (?, ?, ?, ?, ?, ?, ?)";
     try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + DATABASE_PATH);
         PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-      statement.setString(1, entry.getTitle());
-      statement.setString(2, entry.getContent());
-      statement.setString(3, String.join("|", entry.getImages()));
-      statement.setString(4, String.join("|", entry.getTags()));
+      statement.setLong(1, entry.getUserId());
       if (entry.getAttractionId() == null) {
-        statement.setObject(5, null);
+        statement.setObject(2, null);
       } else {
-        statement.setLong(5, entry.getAttractionId());
+        statement.setLong(2, entry.getAttractionId());
       }
-      statement.setInt(6, entry.isCheckedIn() ? 1 : 0);
-      statement.setString(7, entry.getCheckInNote());
-      statement.setString(8, entry.getTemplate());
-      statement.setInt(9, entry.isShared() ? 1 : 0);
-      statement.setString(10, entry.getCreatedAt().toString());
-      statement.setString(11, entry.getUpdatedAt().toString());
+      statement.setString(3, entry.getTitle());
+      statement.setString(4, entry.getContent());
+      statement.setInt(5, entry.isPublicEntry() ? 1 : 0);
+      statement.setString(6, entry.getCreatedAt().toString());
+      statement.setString(7, entry.getUpdatedAt().toString());
       statement.executeUpdate();
 
       try (ResultSet keys = statement.getGeneratedKeys()) {
         if (keys.next()) {
-          return fetchById(keys.getLong(1)).orElse(entry);
+          long id = keys.getLong(1);
+          replaceImages(connection, id, entry.getImages());
+          return fetchById(id).orElse(entry);
         }
       }
       return entry;
@@ -71,26 +83,22 @@ public class DiaryRepository {
 
   public DiaryEntry update(DiaryEntry entry) {
     String sql = "UPDATE " + tableName
-        + " SET title = ?, content = ?, images = ?, tags = ?, attraction_id = ?, checked_in = ?, check_in_note = ?,"
-        + " template = ?, shared = ?, updated_at = ? WHERE id = ?";
+        + " SET user_id = ?, attraction_id = ?, title = ?, content = ?, is_public = ?, updated_at = ? WHERE id = ?";
     try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + DATABASE_PATH);
         PreparedStatement statement = connection.prepareStatement(sql)) {
-      statement.setString(1, entry.getTitle());
-      statement.setString(2, entry.getContent());
-      statement.setString(3, String.join("|", entry.getImages()));
-      statement.setString(4, String.join("|", entry.getTags()));
+      statement.setLong(1, entry.getUserId());
       if (entry.getAttractionId() == null) {
-        statement.setObject(5, null);
+        statement.setObject(2, null);
       } else {
-        statement.setLong(5, entry.getAttractionId());
+        statement.setLong(2, entry.getAttractionId());
       }
-      statement.setInt(6, entry.isCheckedIn() ? 1 : 0);
-      statement.setString(7, entry.getCheckInNote());
-      statement.setString(8, entry.getTemplate());
-      statement.setInt(9, entry.isShared() ? 1 : 0);
-      statement.setString(10, entry.getUpdatedAt().toString());
-      statement.setLong(11, entry.getId());
+      statement.setString(3, entry.getTitle());
+      statement.setString(4, entry.getContent());
+      statement.setInt(5, entry.isPublicEntry() ? 1 : 0);
+      statement.setString(6, entry.getUpdatedAt().toString());
+      statement.setLong(7, entry.getId());
       statement.executeUpdate();
+      replaceImages(connection, entry.getId(), entry.getImages());
       return fetchById(entry.getId()).orElse(entry);
     } catch (SQLException ex) {
       return entry;
@@ -129,32 +137,87 @@ public class DiaryRepository {
   }
 
   private DiaryEntry mapEntry(ResultSet resultSet) throws SQLException {
+    Long id = resultSet.getLong("id");
     return new DiaryEntry(
-        resultSet.getLong("id"),
+        id,
+        resultSet.getLong("user_id"),
         resultSet.getString("title"),
         resultSet.getString("content"),
-        parseList(resultSet.getString("images")),
-        parseList(resultSet.getString("tags")),
+        fetchImages(id),
         readLong(resultSet, "attraction_id"),
-        resultSet.getInt("checked_in") == 1,
-        resultSet.getString("check_in_note"),
-        resultSet.getString("template"),
-        resultSet.getInt("shared") == 1,
-        Instant.parse(resultSet.getString("created_at")),
-        Instant.parse(resultSet.getString("updated_at"))
+        resultSet.getInt("is_public") == 1,
+        parseInstant(resultSet.getString("created_at")),
+        parseInstant(resultSet.getString("updated_at"))
     );
-  }
-
-  private List<String> parseList(String text) {
-    if (text == null || text.isBlank()) {
-      return new ArrayList<>();
-    }
-    return new ArrayList<>(Arrays.asList(text.split("\\|")));
   }
 
   private Long readLong(ResultSet resultSet, String column) throws SQLException {
     long value = resultSet.getLong(column);
     return resultSet.wasNull() ? null : value;
+  }
+
+  private Instant parseInstant(String value) {
+    if (value == null || value.isBlank()) {
+      return Instant.now();
+    }
+    try {
+      return Instant.parse(value);
+    } catch (DateTimeParseException ex) {
+      LocalDateTime local = LocalDateTime.parse(value, SQLITE_DATE_FORMATTER);
+      return local.atZone(ZoneId.systemDefault()).toInstant();
+    }
+  }
+
+  private List<String> fetchImages(Long diaryId) {
+    if (!hasImagesTable) {
+      return new ArrayList<>();
+    }
+    String sql = "SELECT file_path FROM " + IMAGES_TABLE + " WHERE diary_id = ? ORDER BY display_order, id";
+    List<String> images = new ArrayList<>();
+    try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + DATABASE_PATH);
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setLong(1, diaryId);
+      try (ResultSet resultSet = statement.executeQuery()) {
+        while (resultSet.next()) {
+          String path = resultSet.getString("file_path");
+          if (path != null && !path.isBlank()) {
+            images.add(path);
+          }
+        }
+      }
+    } catch (SQLException ex) {
+      return new ArrayList<>();
+    }
+    return images;
+  }
+
+  private void replaceImages(Connection connection, Long diaryId, List<String> images) throws SQLException {
+    if (!hasImagesTable) {
+      return;
+    }
+    try (PreparedStatement delete = connection.prepareStatement(
+        "DELETE FROM " + IMAGES_TABLE + " WHERE diary_id = ?")) {
+      delete.setLong(1, diaryId);
+      delete.executeUpdate();
+    }
+    if (images == null || images.isEmpty()) {
+      return;
+    }
+    String insertSql = "INSERT INTO " + IMAGES_TABLE + " (diary_id, file_path, display_order) VALUES (?, ?, ?)";
+    try (PreparedStatement insert = connection.prepareStatement(insertSql)) {
+      int order = 0;
+      for (String image : images) {
+        if (image == null || image.isBlank()) {
+          continue;
+        }
+        insert.setLong(1, diaryId);
+        insert.setString(2, image);
+        insert.setInt(3, order);
+        insert.addBatch();
+        order += 1;
+      }
+      insert.executeBatch();
+    }
   }
 
   private Optional<String> resolveTableName() {
@@ -176,5 +239,21 @@ public class DiaryRepository {
       }
     }
     return Optional.empty();
+  }
+
+  private boolean resolveImagesTable() {
+    if (!Files.exists(Path.of(DATABASE_PATH))) {
+      return false;
+    }
+    String sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?";
+    try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + DATABASE_PATH);
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setString(1, IMAGES_TABLE);
+      try (ResultSet resultSet = statement.executeQuery()) {
+        return resultSet.next();
+      }
+    } catch (SQLException ex) {
+      return false;
+    }
   }
 }
