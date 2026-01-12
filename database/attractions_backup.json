@@ -14,7 +14,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/塔山阻击战纪念馆.jpg"
-    ]
+    ],
+    "popularity": 65,
+    "score": 4.4
   },
   {
     "id": 84,
@@ -31,7 +33,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/俄界会议遗址.jpg"
-    ]
+    ],
+    "popularity": 50,
+    "score": 4.1
   },
   {
     "id": 231,
@@ -48,7 +52,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/南湖革命纪念馆.jpg"
-    ]
+    ],
+    "popularity": 60,
+    "score": 4.3
   },
   {
     "id": 10,
@@ -65,7 +71,9 @@
     "updated_at": "2026-01-10 17:43:49",
     "images": [
       "attraction_images/八路军太行纪念馆.jpg"
-    ]
+    ],
+    "popularity": 82,
+    "score": 4.7
   },
   {
     "id": 73,
@@ -82,7 +90,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/猴场会议会址.jpg"
-    ]
+    ],
+    "popularity": 52,
+    "score": 4.2
   },
   {
     "id": 27,
@@ -99,7 +109,9 @@
     "updated_at": "2026-01-10 17:43:49",
     "images": [
       "attraction_images/西柏坡纪念馆.jpg"
-    ]
+    ],
+    "popularity": 68,
+    "score": 4.6
   },
   {
     "id": 16,
@@ -116,7 +128,9 @@
     "updated_at": "2026-01-10 17:43:49",
     "images": [
       "attraction_images/渡江战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 81,
+    "score": 4.7
   },
   {
     "id": 126,
@@ -133,7 +147,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/天津周恩来邓颖超纪念馆.jpg"
-    ]
+    ],
+    "popularity": 59,
+    "score": 4.2
   },
   {
     "id": 32,
@@ -150,7 +166,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/广州农民运动讲习所旧址.jpg"
-    ]
+    ],
+    "popularity": 75,
+    "score": 4.5
   },
   {
     "id": 86,
@@ -167,7 +185,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/哈达铺红军长征纪念馆.jpg"
-    ]
+    ],
+    "popularity": 66,
+    "score": 4.4
   },
   {
     "id": 66,
@@ -184,7 +204,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/左右江革命根据地.jpg"
-    ]
+    ],
+    "popularity": 68,
+    "score": 4.4
   },
   {
     "id": 7,
@@ -201,24 +223,9 @@
     "updated_at": "2026-01-10 17:43:49",
     "images": [
       "attraction_images/上海四行仓库抗战纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 44,
-    "name": "渡江战役纪念馆",
-    "address": "安徽省合肥市包河区云谷路299号",
-    "longitude": 117.35,
-    "latitude": 31.7333,
-    "category": 1,
-    "brief_intro": "纪念百万雄师过大江的渡江战役",
-    "historical_background": "1949年4月20日-6月2日，人民解放军百万大军发起渡江战役，突破长江天险，解放南京、上海等大城市，宣告国民党反动统治的覆灭。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-17:00（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/渡江战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 78,
+    "score": 4.7
   },
   {
     "id": 163,
@@ -235,7 +242,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/中共一大纪念馆.jpg"
-    ]
+    ],
+    "popularity": 62,
+    "score": 4.3
   },
   {
     "id": 214,
@@ -252,7 +261,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/抗美援朝纪念馆.jpg"
-    ]
+    ],
+    "popularity": 80,
+    "score": 4.8
   },
   {
     "id": 97,
@@ -269,24 +280,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/赵一曼纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 4,
-    "name": "广州农民运动讲习所旧址",
-    "address": "广东省广州市越秀区中山四路42号",
-    "longitude": 113.2644,
-    "latitude": 23.1291,
-    "category": 3,
-    "brief_intro": "培养农民运动干部的重要场所",
-    "historical_background": "1924-1926年，毛泽东等共产党人在这里主办了六届农民运动讲习所，培养了大批农民运动骨干，为中国革命奠定了重要的群众基础。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-17:00（周一闭馆）",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/广州农民运动讲习所旧址.jpg"
-    ]
+    ],
+    "popularity": 64,
+    "score": 4.4
   },
   {
     "id": 26,
@@ -303,7 +299,9 @@
     "updated_at": "2026-01-10 17:43:49",
     "images": [
       "attraction_images/铁人王进喜纪念馆.jpg"
-    ]
+    ],
+    "popularity": 83,
+    "score": 4.7
   },
   {
     "id": 192,
@@ -320,7 +318,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/新四军军部旧址.jpg"
-    ]
+    ],
+    "popularity": 58,
+    "score": 4.2
   },
   {
     "id": 113,
@@ -337,7 +337,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/焦庄户地道战遗址纪念馆.jpg"
-    ]
+    ],
+    "popularity": 76,
+    "score": 4.6
   },
   {
     "id": 98,
@@ -354,7 +356,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/彭雪枫纪念馆.jpg"
-    ]
+    ],
+    "popularity": 63,
+    "score": 4.3
   },
   {
     "id": 229,
@@ -371,7 +375,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/南京大屠杀纪念馆.jpg"
-    ]
+    ],
+    "popularity": 57,
+    "score": 4.3
   },
   {
     "id": 159,
@@ -388,7 +394,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/赵一曼纪念馆.jpg"
-    ]
+    ],
+    "popularity": 65,
+    "score": 4.4
   },
   {
     "id": 143,
@@ -405,7 +413,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/抗美援朝纪念馆.jpg"
-    ]
+    ],
+    "popularity": 71,
+    "score": 4.5
   },
   {
     "id": 122,
@@ -422,7 +432,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/张自忠将军纪念馆.jpg"
-    ]
+    ],
+    "popularity": 55,
+    "score": 4.1
   },
   {
     "id": 100,
@@ -439,7 +451,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/武汉抗战纪念园.jpg"
-    ]
+    ],
+    "popularity": 69,
+    "score": 4.5
   },
   {
     "id": 105,
@@ -456,7 +470,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/娄山关红军战斗遗址.jpg"
-    ]
+    ],
+    "popularity": 54,
+    "score": 4.2
   },
   {
     "id": 217,
@@ -473,7 +489,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/抗日山烈士陵园.jpg"
-    ]
+    ],
+    "popularity": 70,
+    "score": 4.5
   },
   {
     "id": 154,
@@ -490,7 +508,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/两弹城景区.jpg"
-    ]
+    ],
+    "popularity": 47,
+    "score": 4.0
   },
   {
     "id": 60,
@@ -507,7 +527,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/天津周恩来邓颖超纪念馆.jpg"
-    ]
+    ],
+    "popularity": 73,
+    "score": 4.6
   },
   {
     "id": 226,
@@ -524,7 +546,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/八路军太行纪念馆.jpg"
-    ]
+    ],
+    "popularity": 71,
+    "score": 4.6
   },
   {
     "id": 36,
@@ -541,7 +565,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/南京大屠杀纪念馆.jpg"
-    ]
+    ],
+    "popularity": 93,
+    "score": 4.8
   },
   {
     "id": 209,
@@ -558,7 +584,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/冉庄地道战遗址.jpg"
-    ]
+    ],
+    "popularity": 60,
+    "score": 4.2
   },
   {
     "id": 189,
@@ -575,7 +603,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/彭雪枫纪念馆.jpg"
-    ]
+    ],
+    "popularity": 59,
+    "score": 4.2
   },
   {
     "id": 220,
@@ -592,7 +622,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/大庆油田历史陈列馆.jpg"
-    ]
+    ],
+    "popularity": 70,
+    "score": 4.4
   },
   {
     "id": 90,
@@ -609,7 +641,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/百团大战纪念馆.jpg"
-    ]
+    ],
+    "popularity": 76,
+    "score": 4.6
   },
   {
     "id": 237,
@@ -626,7 +660,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/淮海战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 65,
+    "score": 4.3
   },
   {
     "id": 42,
@@ -643,7 +679,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/淮海战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 84,
+    "score": 4.8
   },
   {
     "id": 210,
@@ -660,7 +698,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/鄂豫皖苏区首府革命博物馆.jpg"
-    ]
+    ],
+    "popularity": 61,
+    "score": 4.2
   },
   {
     "id": 148,
@@ -677,7 +717,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/八一南昌起义纪念馆.jpg"
-    ]
+    ],
+    "popularity": 48,
+    "score": 4.1
   },
   {
     "id": 40,
@@ -694,24 +736,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/西柏坡纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 53,
-    "name": "大庆油田历史陈列馆",
-    "address": "黑龙江省大庆市萨尔图区中七路",
-    "longitude": 125.1028,
-    "latitude": 46.5892,
-    "category": 8,
-    "brief_intro": "展示大庆油田开发建设历史的专题馆",
-    "historical_background": "1959年发现大庆油田，1960年开展石油大会战，铁人王进喜等老一辈石油工人铸就了'大庆精神'和'铁人精神'。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:00",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/大庆油田历史陈列馆.jpg"
-    ]
+    ],
+    "popularity": 74,
+    "score": 4.5
   },
   {
     "id": 107,
@@ -728,7 +755,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/石家庄解放纪念馆.jpg"
-    ]
+    ],
+    "popularity": 62,
+    "score": 4.3
   },
   {
     "id": 125,
@@ -745,7 +774,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/猴场会议会址.jpg"
-    ]
+    ],
+    "popularity": 75,
+    "score": 4.5
   },
   {
     "id": 29,
@@ -762,7 +793,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/中共一大纪念馆.jpg"
-    ]
+    ],
+    "popularity": 94,
+    "score": 4.9
   },
   {
     "id": 161,
@@ -779,7 +812,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/台儿庄大战纪念馆.jpg"
-    ]
+    ],
+    "popularity": 49,
+    "score": 4.0
   },
   {
     "id": 3,
@@ -796,7 +831,9 @@
     "updated_at": "2026-01-10 17:43:49",
     "images": [
       "attraction_images/西柏坡纪念馆.jpg"
-    ]
+    ],
+    "popularity": 58,
+    "score": 4.2
   },
   {
     "id": 58,
@@ -813,7 +850,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/中山舰博物馆.jpg"
-    ]
+    ],
+    "popularity": 66,
+    "score": 4.4
   },
   {
     "id": 104,
@@ -830,7 +869,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/孟良崮战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 77,
+    "score": 4.6
   },
   {
     "id": 33,
@@ -847,7 +888,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/安源路矿工人运动纪念馆.jpg"
-    ]
+    ],
+    "popularity": 71,
+    "score": 4.5
   },
   {
     "id": 39,
@@ -864,7 +907,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/新四军军部旧址.jpg"
-    ]
+    ],
+    "popularity": 79,
+    "score": 4.7
   },
   {
     "id": 155,
@@ -881,7 +926,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/会宁红军长征胜利纪念馆.jpg"
-    ]
+    ],
+    "popularity": 53,
+    "score": 4.1
   },
   {
     "id": 112,
@@ -898,7 +945,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/猴场会议会址.jpg"
-    ]
+    ],
+    "popularity": 85,
+    "score": 4.7
   },
   {
     "id": 184,
@@ -915,7 +964,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/焦庄户地道战遗址纪念馆.jpg"
-    ]
+    ],
+    "popularity": 67,
+    "score": 4.4
   },
   {
     "id": 79,
@@ -932,7 +983,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/闽西革命历史博物馆.jpg"
-    ]
+    ],
+    "popularity": 60,
+    "score": 4.3
   },
   {
     "id": 236,
@@ -949,24 +1002,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/娄山关红军战斗遗址.jpg"
-    ]
-  },
-  {
-    "id": 14,
-    "name": "淮海战役纪念馆",
-    "address": "江苏省徐州市泉山区解放南路2号",
-    "longitude": 117.1848,
-    "latitude": 34.2221,
-    "category": 1,
-    "brief_intro": "纪念淮海战役胜利的专题纪念馆",
-    "historical_background": "1948年11月-1949年1月，华东、中原野战军在以徐州为中心的广大地区发起淮海战役，歼灭国民党军55万余人，为渡江作战创造了条件。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-17:00（周一闭馆）",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/淮海战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 68,
+    "score": 4.3
   },
   {
     "id": 22,
@@ -983,7 +1021,9 @@
     "updated_at": "2026-01-10 17:43:49",
     "images": [
       "attraction_images/井冈山革命博物馆.jpg"
-    ]
+    ],
+    "popularity": 95,
+    "score": 4.9
   },
   {
     "id": 99,
@@ -1000,7 +1040,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/新四军江南指挥部纪念馆.jpg"
-    ]
+    ],
+    "popularity": 64,
+    "score": 4.2
   },
   {
     "id": 48,
@@ -1017,7 +1059,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/重庆歌乐山烈士陵园.jpg"
-    ]
+    ],
+    "popularity": 80,
+    "score": 4.7
   },
   {
     "id": 85,
@@ -1034,7 +1078,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/腊子口战役遗址.jpg"
-    ]
+    ],
+    "popularity": 57,
+    "score": 4.1
   },
   {
     "id": 76,
@@ -1051,7 +1097,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/四渡赤水纪念馆.jpg"
-    ]
+    ],
+    "popularity": 75,
+    "score": 4.5
   },
   {
     "id": 13,
@@ -1068,7 +1116,9 @@
     "updated_at": "2026-01-10 17:43:49",
     "images": [
       "attraction_images/吴起镇革命旧址.jpg"
-    ]
+    ],
+    "popularity": 85,
+    "score": 4.8
   },
   {
     "id": 82,
@@ -1085,7 +1135,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/两河口会议会址.jpg"
-    ]
+    ],
+    "popularity": 51,
+    "score": 4.0
   },
   {
     "id": 153,
@@ -1102,7 +1154,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/遵义会议纪念馆.jpg"
-    ]
+    ],
+    "popularity": 56,
+    "score": 4.1
   },
   {
     "id": 18,
@@ -1119,24 +1173,9 @@
     "updated_at": "2026-01-10 17:43:49",
     "images": [
       "attraction_images/八一南昌起义纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 208,
-    "name": "渡江战役纪念馆",
-    "address": "安徽省合肥市包河区云谷路299号",
-    "longitude": 117.35,
-    "latitude": 31.7333,
-    "category": 1,
-    "brief_intro": "渡江战役纪念地",
-    "historical_background": "1949年4月20日-6月2日，百万雄师过大江，突破长江天险，解放南京、上海等大城市，宣告国民党反动统治覆灭。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-17:00",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/渡江战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 90,
+    "score": 4.8
   },
   {
     "id": 71,
@@ -1153,7 +1192,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/大庆油田历史陈列馆.jpg"
-    ]
+    ],
+    "popularity": 61,
+    "score": 4.2
   },
   {
     "id": 80,
@@ -1170,7 +1211,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/飞夺泸定桥纪念馆.jpg"
-    ]
+    ],
+    "popularity": 55,
+    "score": 4.3
   },
   {
     "id": 117,
@@ -1187,24 +1230,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/张自忠将军纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 25,
-    "name": "大庆油田历史陈列馆",
-    "address": "黑龙江省大庆市萨尔图区中七路",
-    "longitude": 125.1028,
-    "latitude": 46.5892,
-    "category": 8,
-    "brief_intro": "展示大庆油田开发建设历史的专题馆",
-    "historical_background": "1959年发现大庆油田，1960年开展石油大会战，铁人王进喜等老一辈石油工人铸就了'大庆精神'和'铁人精神'。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:00",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/大庆油田历史陈列馆.jpg"
-    ]
+    ],
+    "popularity": 44,
+    "score": 4.0
   },
   {
     "id": 178,
@@ -1221,7 +1249,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/新四军江南指挥部纪念馆.jpg"
-    ]
+    ],
+    "popularity": 68,
+    "score": 4.4
   },
   {
     "id": 121,
@@ -1238,7 +1268,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/抗日山烈士陵园.jpg"
-    ]
+    ],
+    "popularity": 59,
+    "score": 4.3
   },
   {
     "id": 15,
@@ -1255,7 +1287,9 @@
     "updated_at": "2026-01-10 17:43:49",
     "images": [
       "attraction_images/平津战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 86,
+    "score": 4.8
   },
   {
     "id": 127,
@@ -1272,7 +1306,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/井冈山革命博物馆.jpg"
-    ]
+    ],
+    "popularity": 87,
+    "score": 4.8
   },
   {
     "id": 37,
@@ -1289,24 +1325,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/台儿庄大战纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 201,
-    "name": "淮海战役纪念馆",
-    "address": "江苏省徐州市泉山区解放南路2号",
-    "longitude": 117.1848,
-    "latitude": 34.2221,
-    "category": 1,
-    "brief_intro": "淮海战役全景画馆",
-    "historical_background": "1948年11月-1949年1月，华东、中原野战军歼敌55万余人，为渡江作战创造了条件，是解放战争战略决战最重要战役。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-17:00",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/淮海战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 83,
+    "score": 4.7
   },
   {
     "id": 218,
@@ -1323,7 +1344,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/雷锋纪念馆.jpg"
-    ]
+    ],
+    "popularity": 79,
+    "score": 4.6
   },
   {
     "id": 165,
@@ -1340,7 +1363,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/平津战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 88,
+    "score": 4.8
   },
   {
     "id": 207,
@@ -1357,24 +1382,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/九一八历史博物馆.jpg"
-    ]
-  },
-  {
-    "id": 186,
-    "name": "台儿庄大战纪念馆",
-    "address": "山东省枣庄市台儿庄区沿河南路",
-    "longitude": 117.735,
-    "latitude": 34.5576,
-    "category": 1,
-    "brief_intro": "纪念台儿庄大捷",
-    "historical_background": "1938年春，中国军队在台儿庄与日军激战，歼敌万余人，是抗战以来正面战场最大胜利。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:00",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/台儿庄大战纪念馆.jpg"
-    ]
+    ],
+    "popularity": 61,
+    "score": 4.2
   },
   {
     "id": 132,
@@ -1391,24 +1401,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/闽西革命历史博物馆.jpg"
-    ]
-  },
-  {
-    "id": 227,
-    "name": "两弹一星纪念馆",
-    "address": "北京市海淀区怀柔区雁栖镇",
-    "longitude": 116.6573,
-    "latitude": 40.3616,
-    "category": 1,
-    "brief_intro": "两弹一星功勋纪念馆",
-    "historical_background": "1960-1970年代，在极端困难条件下，我国成功研制原子弹、氢弹和人造卫星，极大提升了国际地位和国防实力。",
-    "per_capita_consumption": 3000,
-    "business_hours": "09:00-16:00（需预约）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/南湖革命纪念馆.jpg"
-    ]
+    ],
+    "popularity": 66,
+    "score": 4.3
   },
   {
     "id": 211,
@@ -1425,41 +1420,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/石家庄解放纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 41,
-    "name": "辽沈战役纪念馆",
-    "address": "辽宁省锦州市凌河区北京路五段1号",
-    "longitude": 121.14,
-    "latitude": 41.11,
-    "category": 1,
-    "brief_intro": "展示辽沈战役全过程的专题纪念馆",
-    "historical_background": "1948年9-11月，东北野战军发起辽沈战役，歼灭国民党军47万余人，解放东北全境，为解放全中国奠定基础。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:30（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/孟良崮战役纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 50,
-    "name": "天安门广场",
-    "address": "北京市东城区天安门广场",
-    "longitude": 116.3975,
-    "latitude": 39.9087,
-    "category": 9,
-    "brief_intro": "中华人民共和国成立的历史见证地",
-    "historical_background": "1949年10月1日，毛泽东主席在天安门城楼庄严宣告中华人民共和国成立，标志着新民主主义革命的基本胜利。",
-    "per_capita_consumption": 0,
-    "business_hours": "05:00-22:00",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/会宁红军长征胜利纪念馆.jpg"
-    ]
+    ],
+    "popularity": 59,
+    "score": 4.1
   },
   {
     "id": 92,
@@ -1476,24 +1439,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/巴西会议纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 194,
-    "name": "孟良崮战役纪念馆",
-    "address": "山东省临沂市蒙阴县垛庄镇",
-    "longitude": 118.1333,
-    "latitude": 35.5667,
-    "category": 1,
-    "brief_intro": "孟良崮战役纪念地",
-    "historical_background": "1947年5月，华东野战军在孟良崮全歼国民党军整编74师3.2万余人，击毙中将师长张灵甫，粉碎了国民党军重点进攻。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:00-17:30",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/孟良崮战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 74,
+    "score": 4.5
   },
   {
     "id": 130,
@@ -1510,7 +1458,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/淮海战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 72,
+    "score": 4.4
   },
   {
     "id": 206,
@@ -1527,7 +1477,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/中共三大会址纪念馆.jpg"
-    ]
+    ],
+    "popularity": 42,
+    "score": 4.0
   },
   {
     "id": 140,
@@ -1544,7 +1496,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/淮海战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 46,
+    "score": 4.0
   },
   {
     "id": 176,
@@ -1561,7 +1515,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/张自忠将军纪念馆.jpg"
-    ]
+    ],
+    "popularity": 62,
+    "score": 4.2
   },
   {
     "id": 120,
@@ -1578,7 +1534,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/雷锋纪念馆.jpg"
-    ]
+    ],
+    "popularity": 52,
+    "score": 4.1
   },
   {
     "id": 67,
@@ -1595,7 +1553,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/中华苏维埃共和国临时中央政府大礼堂.jpg"
-    ]
+    ],
+    "popularity": 73,
+    "score": 4.4
   },
   {
     "id": 145,
@@ -1612,7 +1572,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/九一八历史博物馆.jpg"
-    ]
+    ],
+    "popularity": 45,
+    "score": 4.0
   },
   {
     "id": 103,
@@ -1629,7 +1591,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/黄花岗七十二烈士墓园.jpg"
-    ]
+    ],
+    "popularity": 78,
+    "score": 4.6
   },
   {
     "id": 193,
@@ -1646,7 +1610,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/吴起镇革命旧址.jpg"
-    ]
+    ],
+    "popularity": 43,
+    "score": 4.0
   },
   {
     "id": 87,
@@ -1663,7 +1629,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/吴起镇革命旧址.jpg"
-    ]
+    ],
+    "popularity": 59,
+    "score": 4.2
   },
   {
     "id": 57,
@@ -1680,24 +1648,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/戴安澜将军纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 52,
-    "name": "雷锋纪念馆",
-    "address": "辽宁省抚顺市望花区雷锋路东段61号",
-    "longitude": 123.9115,
-    "latitude": 41.8473,
-    "category": 1,
-    "brief_intro": "纪念共产主义战士雷锋的专题纪念馆",
-    "historical_background": "雷锋是新中国成立后涌现出的优秀共产主义战士，全心全意为人民服务的光辉典范，1962年因公殉职，年仅22岁。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:00（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/雷锋纪念馆.jpg"
-    ]
+    ],
+    "popularity": 56,
+    "score": 4.2
   },
   {
     "id": 116,
@@ -1714,7 +1667,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/闽西革命历史博物馆.jpg"
-    ]
+    ],
+    "popularity": 44,
+    "score": 4.0
   },
   {
     "id": 212,
@@ -1731,7 +1686,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/渡江战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 47,
+    "score": 4.0
   },
   {
     "id": 172,
@@ -1748,7 +1705,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/李兆麟将军纪念馆.jpg"
-    ]
+    ],
+    "popularity": 50,
+    "score": 4.0
   },
   {
     "id": 169,
@@ -1765,7 +1724,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/彭雪枫纪念馆.jpg"
-    ]
+    ],
+    "popularity": 53,
+    "score": 4.1
   },
   {
     "id": 83,
@@ -1782,24 +1743,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/巴西会议纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 31,
-    "name": "中共二大会址纪念馆",
-    "address": "上海市静安区老成都北路7弄30号",
-    "longitude": 121.4678,
-    "latitude": 31.2304,
-    "category": 3,
-    "brief_intro": "中国共产党第二次全国代表大会会址",
-    "historical_background": "1922年7月，中共二大在此召开，首次提出反帝反封建的民主革命纲领，制定了中国共产党第一部党章。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:30（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/抗美援朝纪念馆.jpg"
-    ]
+    ],
+    "popularity": 40,
+    "score": 4.0
   },
   {
     "id": 190,
@@ -1816,7 +1762,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/闽西革命历史博物馆.jpg"
-    ]
+    ],
+    "popularity": 48,
+    "score": 4.0
   },
   {
     "id": 183,
@@ -1833,7 +1781,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/冉庄地道战遗址.jpg"
-    ]
+    ],
+    "popularity": 69,
+    "score": 4.5
   },
   {
     "id": 239,
@@ -1850,7 +1800,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/雄安新区规划展示中心.jpg"
-    ]
+    ],
+    "popularity": 54,
+    "score": 4.2
   },
   {
     "id": 166,
@@ -1867,7 +1819,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/九一八历史博物馆.jpg"
-    ]
+    ],
+    "popularity": 81,
+    "score": 4.7
   },
   {
     "id": 181,
@@ -1884,7 +1838,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/刘老庄八十二烈士陵园.jpg"
-    ]
+    ],
+    "popularity": 48,
+    "score": 4.0
   },
   {
     "id": 196,
@@ -1901,7 +1857,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/石家庄解放纪念馆.jpg"
-    ]
+    ],
+    "popularity": 46,
+    "score": 4.0
   },
   {
     "id": 174,
@@ -1918,7 +1876,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/淮海战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 83,
+    "score": 4.6
   },
   {
     "id": 158,
@@ -1935,41 +1895,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/刘老庄八十二烈士陵园.jpg"
-    ]
-  },
-  {
-    "id": 54,
-    "name": "铁人王进喜纪念馆",
-    "address": "黑龙江省大庆市让胡路区中原路2号",
-    "longitude": 124.8563,
-    "latitude": 46.6524,
-    "category": 1,
-    "brief_intro": "纪念'铁人'王进喜的专题纪念馆",
-    "historical_background": "王进喜是大庆石油工人的杰出代表，'铁人精神'的化身，为我国石油工业发展作出了卓越贡献。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:00（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/铁人王进喜纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 102,
-    "name": "刘老庄八十二烈士陵园",
-    "address": "江苏省淮安市淮阴区刘老庄乡",
-    "longitude": 119.0333,
-    "latitude": 33.6167,
-    "category": 2,
-    "brief_intro": "纪念刘老庄连八十二烈士",
-    "historical_background": "1943年3月18日，新四军第三师七旅十九团四连82名战士在淮阴刘老庄战斗中全部壮烈牺牲，阻击了1600余名日伪军的进攻。",
-    "per_capita_consumption": 0,
-    "business_hours": "全天开放",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/刘老庄八十二烈士陵园.jpg"
-    ]
+    ],
+    "popularity": 41,
+    "score": 4.0
   },
   {
     "id": 213,
@@ -1986,7 +1914,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/中华苏维埃共和国临时中央政府大礼堂.jpg"
-    ]
+    ],
+    "popularity": 38,
+    "score": 4.0
   },
   {
     "id": 164,
@@ -2003,24 +1933,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/中华苏维埃共和国临时中央政府大礼堂.jpg"
-    ]
-  },
-  {
-    "id": 20,
-    "name": "重庆歌乐山烈士陵园",
-    "address": "重庆市沙坪坝区烈士墓政法村",
-    "longitude": 106.4064,
-    "latitude": 29.5633,
-    "category": 2,
-    "brief_intro": "纪念被国民党杀害的红岩英烈",
-    "historical_background": "1949年11月27日，国民党特务在溃逃前夕，对关押在白公馆、渣滓洞的革命者进行大屠杀，300余人壮烈牺牲。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-17:00",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/重庆歌乐山烈士陵园.jpg"
-    ]
+    ],
+    "popularity": 39,
+    "score": 4.0
   },
   {
     "id": 62,
@@ -2037,41 +1952,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/井冈山革命博物馆.jpg"
-    ]
-  },
-  {
-    "id": 198,
-    "name": "辽沈战役纪念馆",
-    "address": "辽宁省锦州市凌河区北京路五段1号",
-    "longitude": 121.14,
-    "latitude": 41.11,
-    "category": 1,
-    "brief_intro": "辽沈战役全景画馆",
-    "historical_background": "1948年9-11月，东北野战军歼敌47万余人，解放东北全境，为解放全中国奠定了物质基础。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:30",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/中共一大纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 221,
-    "name": "铁人王进喜纪念馆",
-    "address": "黑龙江省大庆市让胡路区中原路2号",
-    "longitude": 124.8563,
-    "latitude": 46.6524,
-    "category": 1,
-    "brief_intro": "铁人王进喜纪念馆",
-    "historical_background": "王进喜是'铁人'，带领1205钻井队创造年进尺10万米世界纪录，为我国石油工业发展作出卓越贡献。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:00",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/铁人王进喜纪念馆.jpg"
-    ]
+    ],
+    "popularity": 60,
+    "score": 4.3
   },
   {
     "id": 115,
@@ -2088,7 +1971,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/中共三大会址纪念馆.jpg"
-    ]
+    ],
+    "popularity": 50,
+    "score": 4.1
   },
   {
     "id": 69,
@@ -2105,41 +1990,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/鄂豫皖苏区首府革命博物馆.jpg"
-    ]
-  },
-  {
-    "id": 68,
-    "name": "闽西革命历史博物馆",
-    "address": "福建省龙岩市新罗区北环西路",
-    "longitude": 117.0296,
-    "latitude": 25.0911,
-    "category": 8,
-    "brief_intro": "展示闽西革命斗争历史",
-    "historical_background": "闽西是中央苏区的重要组成部分，毛泽东、朱德等在此领导革命斗争，创造了'二十年红旗不倒'的奇迹。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-17:00（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/闽西革命历史博物馆.jpg"
-    ]
-  },
-  {
-    "id": 35,
-    "name": "上海四行仓库抗战纪念馆",
-    "address": "上海市静安区光复路1号",
-    "longitude": 121.4751,
-    "latitude": 31.2401,
-    "category": 1,
-    "brief_intro": "淞沪会战中八百壮士英勇抗战的遗址",
-    "historical_background": "1937年淞沪会战期间，谢晋元率八百壮士在四行仓库孤军奋战四天四夜，粉碎了日军三个月灭亡中国的狂妄计划，极大鼓舞了全国军民的抗战决心。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:30（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/上海四行仓库抗战纪念馆.jpg"
-    ]
+    ],
+    "popularity": 60,
+    "score": 4.2
   },
   {
     "id": 149,
@@ -2156,7 +2009,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/台儿庄大战纪念馆.jpg"
-    ]
+    ],
+    "popularity": 37,
+    "score": 4.0
   },
   {
     "id": 182,
@@ -2173,7 +2028,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/重庆歌乐山烈士陵园.jpg"
-    ]
+    ],
+    "popularity": 68,
+    "score": 4.4
   },
   {
     "id": 49,
@@ -2190,7 +2047,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/娄山关红军战斗遗址.jpg"
-    ]
+    ],
+    "popularity": 55,
+    "score": 4.2
   },
   {
     "id": 152,
@@ -2207,7 +2066,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/西柏坡纪念馆.jpg"
-    ]
+    ],
+    "popularity": 58,
+    "score": 4.1
   },
   {
     "id": 175,
@@ -2224,7 +2085,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/武汉抗战纪念园.jpg"
-    ]
+    ],
+    "popularity": 45,
+    "score": 4.0
   },
   {
     "id": 219,
@@ -2241,7 +2104,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/九一八历史博物馆.jpg"
-    ]
+    ],
+    "popularity": 43,
+    "score": 4.0
   },
   {
     "id": 202,
@@ -2258,24 +2123,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/彭雪枫纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 232,
-    "name": "小岗村大包干纪念馆",
-    "address": "安徽省滁州市凤阳县小溪河镇",
-    "longitude": 117.5667,
-    "latitude": 32.7167,
-    "category": 1,
-    "brief_intro": "中国农村改革发源地",
-    "historical_background": "1978年冬，小岗村18户农民按下红手印，实行'大包干'，拉开了中国农村改革的序幕。",
-    "per_capita_consumption": 500,
-    "business_hours": "08:00-18:00",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/广州起义纪念馆.jpg"
-    ]
+    ],
+    "popularity": 44,
+    "score": 4.0
   },
   {
     "id": 235,
@@ -2292,7 +2142,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/雷锋纪念馆.jpg"
-    ]
+    ],
+    "popularity": 49,
+    "score": 4.1
   },
   {
     "id": 188,
@@ -2309,7 +2161,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/南湖革命纪念馆.jpg"
-    ]
+    ],
+    "popularity": 42,
+    "score": 4.0
   },
   {
     "id": 170,
@@ -2326,58 +2180,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/杨靖宇将军殉国地.jpg"
-    ]
-  },
-  {
-    "id": 197,
-    "name": "济南战役纪念馆",
-    "address": "山东省济南市历城区英雄山路18号",
-    "longitude": 117,
-    "latitude": 36.65,
-    "category": 1,
-    "brief_intro": "济南战役纪念地",
-    "historical_background": "1948年9月，华东野战军攻克济南，歼敌10万余人，活捉国民党第二绥靖区司令王耀武，揭开战略决战序幕。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-17:00",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/冉庄地道战遗址.jpg"
-    ]
-  },
-  {
-    "id": 106,
-    "name": "石家庄解放纪念馆",
-    "address": "河北省石家庄市桥西区解放广场",
-    "longitude": 114.4667,
-    "latitude": 38.0333,
-    "category": 1,
-    "brief_intro": "纪念石家庄解放",
-    "historical_background": "1947年11月，晋察冀野战军攻克石家庄，这是解放军攻克的第一座较大城市，为以后的城市攻坚战提供了宝贵经验。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-17:00",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/石家庄解放纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 205,
-    "name": "平津战役纪念馆",
-    "address": "天津市红桥区平津道8号",
-    "longitude": 117.1346,
-    "latitude": 39.1518,
-    "category": 1,
-    "brief_intro": "平津战役全景画馆",
-    "historical_background": "1948年11月-1949年1月，东北野战军和华北军区部队歼敌和改编国民党军52万余人，基本解放华北全境。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:30",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/平津战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 67,
+    "score": 4.5
   },
   {
     "id": 150,
@@ -2394,24 +2199,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/西柏坡纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 8,
-    "name": "南京大屠杀纪念馆",
-    "address": "江苏省南京市建邺区水西门大街418号",
-    "longitude": 118.7506,
-    "latitude": 32.0422,
-    "category": 1,
-    "brief_intro": "纪念南京大屠杀惨案，铭记历史珍爱和平",
-    "historical_background": "1937年12月，侵华日军在南京制造了惨绝人寰的大屠杀，30万同胞惨遭杀害。纪念馆通过大量史实揭露日军暴行，警示后人勿忘国耻。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-16:30（周一闭馆）",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/南京大屠杀纪念馆.jpg"
-    ]
+    ],
+    "popularity": 35,
+    "score": 4.0
   },
   {
     "id": 6,
@@ -2428,7 +2218,9 @@
     "updated_at": "2026-01-10 17:43:49",
     "images": [
       "attraction_images/吴起镇革命旧址.jpg"
-    ]
+    ],
+    "popularity": 60,
+    "score": 4.2
   },
   {
     "id": 203,
@@ -2445,7 +2237,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/冉庄地道战遗址.jpg"
-    ]
+    ],
+    "popularity": 45,
+    "score": 4.0
   },
   {
     "id": 47,
@@ -2462,24 +2256,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/平津战役纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 51,
-    "name": "抗美援朝纪念馆",
-    "address": "辽宁省丹东市振兴区山上街7号",
-    "longitude": 124.3835,
-    "latitude": 40.1258,
-    "category": 1,
-    "brief_intro": "纪念抗美援朝战争的专题纪念馆",
-    "historical_background": "1950-1953年，中国人民志愿军赴朝作战，与朝鲜军民并肩战斗，打败了以美国为首的联合国军，保卫了新中国的安全。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:30（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/抗美援朝纪念馆.jpg"
-    ]
+    ],
+    "popularity": 87,
+    "score": 4.8
   },
   {
     "id": 215,
@@ -2496,24 +2275,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/上海四行仓库抗战纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 108,
-    "name": "塔山阻击战纪念馆",
-    "address": "辽宁省葫芦岛市连山区塔山乡",
-    "longitude": 120.9167,
-    "latitude": 40.8,
-    "category": 1,
-    "brief_intro": "纪念塔山阻击战",
-    "historical_background": "1948年10月，东北野战军第四纵队在塔山地区阻击国民党援军，激战六昼夜，保证了锦州战役的胜利。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:30",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/塔山阻击战纪念馆.jpg"
-    ]
+    ],
+    "popularity": 46,
+    "score": 4.1
   },
   {
     "id": 65,
@@ -2530,7 +2294,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/广州起义纪念馆.jpg"
-    ]
+    ],
+    "popularity": 70,
+    "score": 4.4
   },
   {
     "id": 74,
@@ -2547,7 +2313,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/遵义会议纪念馆.jpg"
-    ]
+    ],
+    "popularity": 88,
+    "score": 4.8
   },
   {
     "id": 64,
@@ -2564,7 +2332,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/八一南昌起义纪念馆.jpg"
-    ]
+    ],
+    "popularity": 87,
+    "score": 4.8
   },
   {
     "id": 63,
@@ -2581,7 +2351,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/井冈山革命博物馆.jpg"
-    ]
+    ],
+    "popularity": 91,
+    "score": 4.8
   },
   {
     "id": 234,
@@ -2598,7 +2370,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/铁人王进喜纪念馆.jpg"
-    ]
+    ],
+    "popularity": 57,
+    "score": 4.2
   },
   {
     "id": 160,
@@ -2615,7 +2389,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/北京大学红楼.jpg"
-    ]
+    ],
+    "popularity": 56,
+    "score": 4.1
   },
   {
     "id": 17,
@@ -2632,24 +2408,9 @@
     "updated_at": "2026-01-10 17:43:49",
     "images": [
       "attraction_images/西柏坡纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 9,
-    "name": "台儿庄大战纪念馆",
-    "address": "山东省枣庄市台儿庄区沿河南路",
-    "longitude": 117.735,
-    "latitude": 34.5576,
-    "category": 1,
-    "brief_intro": "纪念抗战初期台儿庄大捷",
-    "historical_background": "1938年春的台儿庄战役是自抗战以来中国军队的重大胜利，歼敌万余人，极大鼓舞了全国军民的抗战信心。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:00",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/台儿庄大战纪念馆.jpg"
-    ]
+    ],
+    "popularity": 92,
+    "score": 4.8
   },
   {
     "id": 114,
@@ -2666,7 +2427,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/新四军军部旧址.jpg"
-    ]
+    ],
+    "popularity": 44,
+    "score": 4.0
   },
   {
     "id": 157,
@@ -2683,7 +2446,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/广州起义纪念馆.jpg"
-    ]
+    ],
+    "popularity": 49,
+    "score": 4.0
   },
   {
     "id": 75,
@@ -2700,58 +2465,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/娄山关红军战斗遗址.jpg"
-    ]
-  },
-  {
-    "id": 45,
-    "name": "西柏坡纪念馆",
-    "address": "河北省石家庄市平山县西柏坡镇",
-    "longitude": 114.0294,
-    "latitude": 38.3589,
-    "category": 1,
-    "brief_intro": "中共中央最后一个农村指挥所",
-    "historical_background": "1948年5月-1949年3月，中共中央移驻西柏坡，指挥了三大战役，召开了七届二中全会，描绘了新中国的蓝图。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:30",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/西柏坡纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 93,
-    "name": "焦庄户地道战遗址纪念馆",
-    "address": "北京市顺义区龙湾屯镇焦庄户村",
-    "longitude": 116.8667,
-    "latitude": 40.1667,
-    "category": 1,
-    "brief_intro": "展示地道战形式的抗日遗址",
-    "historical_background": "1943-1948年，焦庄户人民利用地道与日军进行斗争，形成了能打能藏、可攻可守的'地下长城'，是人民战争的光辉典范。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-16:30",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/焦庄户地道战遗址纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 187,
-    "name": "台儿庄大战遗址公园",
-    "address": "山东省枣庄市台儿庄区顺河街",
-    "longitude": 117.7333,
-    "latitude": 34.5667,
-    "category": 4,
-    "brief_intro": "台儿庄大战历史遗址",
-    "historical_background": "保存了台儿庄大战时的53处战争遗址，再现了当年惨烈战斗场景。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:30",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/广州起义纪念馆.jpg"
-    ]
+    ],
+    "popularity": 52,
+    "score": 4.2
   },
   {
     "id": 135,
@@ -2768,7 +2484,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/猴场会议会址.jpg"
-    ]
+    ],
+    "popularity": 81,
+    "score": 4.7
   },
   {
     "id": 139,
@@ -2785,7 +2503,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/秋收起义文家市会师旧址.jpg"
-    ]
+    ],
+    "popularity": 63,
+    "score": 4.2
   },
   {
     "id": 141,
@@ -2802,7 +2522,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/两河口会议会址.jpg"
-    ]
+    ],
+    "popularity": 42,
+    "score": 4.0
   },
   {
     "id": 225,
@@ -2819,7 +2541,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/新四军江南指挥部纪念馆.jpg"
-    ]
+    ],
+    "popularity": 40,
+    "score": 4.0
   },
   {
     "id": 224,
@@ -2836,7 +2560,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/强渡乌江渡口遗址.jpg"
-    ]
+    ],
+    "popularity": 51,
+    "score": 4.1
   },
   {
     "id": 128,
@@ -2853,24 +2579,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/闽西革命历史博物馆.jpg"
-    ]
-  },
-  {
-    "id": 19,
-    "name": "雨花台烈士陵园",
-    "address": "江苏省南京市雨花台区雨花路215号",
-    "longitude": 118.7628,
-    "latitude": 31.9922,
-    "category": 2,
-    "brief_intro": "纪念新民主主义革命时期牺牲的雨花台烈士",
-    "historical_background": "1927-1949年，近10万共产党人和革命志士在雨花台英勇就义。1950年建园，是全国规模最大的纪念性陵园之一。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:00-17:00",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/飞夺泸定桥纪念馆.jpg"
-    ]
+    ],
+    "popularity": 69,
+    "score": 4.4
   },
   {
     "id": 110,
@@ -2887,7 +2598,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/淮海战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 86,
+    "score": 4.8
   },
   {
     "id": 109,
@@ -2904,24 +2617,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/雷锋纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 111,
-    "name": "孔繁森同志纪念馆",
-    "address": "山东省聊城市东昌府区繁森路1号",
-    "longitude": 115.9833,
-    "latitude": 36.4333,
-    "category": 1,
-    "brief_intro": "纪念领导干部的楷模孔繁森",
-    "historical_background": "孔繁森两次进藏工作，1994年因公殉职，被誉为'领导干部的楷模'，展现了党员干部的无私奉献精神。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:30",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/中山舰博物馆.jpg"
-    ]
+    ],
+    "popularity": 84,
+    "score": 4.7
   },
   {
     "id": 129,
@@ -2938,24 +2636,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/彭雪枫纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 11,
-    "name": "新四军军部旧址",
-    "address": "安徽省宣城市泾县云岭乡",
-    "longitude": 118.411,
-    "latitude": 30.6914,
-    "category": 3,
-    "brief_intro": "新四军军部驻地旧址",
-    "historical_background": "1938-1941年，新四军军部驻此，指挥华中抗日游击战争。1941年1月，皖南事变爆发，新四军遭受重大损失。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:00",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/新四军军部旧址.jpg"
-    ]
+    ],
+    "popularity": 67,
+    "score": 4.3
   },
   {
     "id": 30,
@@ -2972,7 +2655,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/南湖革命纪念馆.jpg"
-    ]
+    ],
+    "popularity": 89,
+    "score": 4.8
   },
   {
     "id": 136,
@@ -2989,41 +2674,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/安源路矿工人运动纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 34,
-    "name": "京汉铁路总工会旧址",
-    "address": "河南省郑州市二七区钱塘路",
-    "longitude": 113.6253,
-    "latitude": 34.7466,
-    "category": 3,
-    "brief_intro": "京汉铁路工人大罢工指挥中心",
-    "historical_background": "1923年2月，京汉铁路工人在此成立总工会，举行震惊中外的大罢工，虽遭血腥镇压，但显示了中国工人阶级的力量。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-17:00（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/四渡赤水纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 55,
-    "name": "两弹一星纪念馆",
-    "address": "北京市海淀区怀柔区雁栖镇",
-    "longitude": 116.6573,
-    "latitude": 40.3616,
-    "category": 1,
-    "brief_intro": "纪念'两弹一星'伟大成就的专题纪念馆",
-    "historical_background": "1960-1970年代，我国在极端困难的条件下成功研制原子弹、氢弹和人造卫星，极大提升了国际地位和国防实力。",
-    "per_capita_consumption": 30,
-    "business_hours": "09:00-16:00（需预约）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/秋收起义文家市会师旧址.jpg"
-    ]
+    ],
+    "popularity": 77,
+    "score": 4.5
   },
   {
     "id": 134,
@@ -3040,7 +2693,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/淮海战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 48,
+    "score": 4.0
   },
   {
     "id": 168,
@@ -3057,7 +2712,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/赵一曼烈士纪念馆.jpg"
-    ]
+    ],
+    "popularity": 64,
+    "score": 4.3
   },
   {
     "id": 162,
@@ -3074,7 +2731,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/抗美援朝纪念馆.jpg"
-    ]
+    ],
+    "popularity": 46,
+    "score": 4.0
   },
   {
     "id": 91,
@@ -3091,7 +2750,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/平型关大捷纪念馆.jpg"
-    ]
+    ],
+    "popularity": 77,
+    "score": 4.6
   },
   {
     "id": 228,
@@ -3108,7 +2769,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/两弹城景区.jpg"
-    ]
+    ],
+    "popularity": 65,
+    "score": 4.4
   },
   {
     "id": 133,
@@ -3125,7 +2788,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/上海四行仓库抗战纪念馆.jpg"
-    ]
+    ],
+    "popularity": 82,
+    "score": 4.7
   },
   {
     "id": 191,
@@ -3142,7 +2807,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/武汉抗战纪念园.jpg"
-    ]
+    ],
+    "popularity": 39,
+    "score": 4.0
   },
   {
     "id": 216,
@@ -3159,7 +2826,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/遵义会议纪念馆.jpg"
-    ]
+    ],
+    "popularity": 66,
+    "score": 4.4
   },
   {
     "id": 171,
@@ -3176,41 +2845,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/赵尚志纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 195,
-    "name": "莱芜战役纪念馆",
-    "address": "山东省济南市莱芜区英雄路17号",
-    "longitude": 117.6667,
-    "latitude": 36.2,
-    "category": 1,
-    "brief_intro": "莱芜战役全景画馆",
-    "historical_background": "1947年2月，华东野战军在莱芜地区歼敌5.6万余人，俘国民党第二绥靖区副司令李仙洲，收复城市13座。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:00",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/雷锋纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 12,
-    "name": "皖南事变烈士陵园",
-    "address": "安徽省宣城市泾县水西山路",
-    "longitude": 118.4039,
-    "latitude": 30.6844,
-    "category": 2,
-    "brief_intro": "纪念皖南事变中牺牲的新四军烈士",
-    "historical_background": "1941年1月，皖南新四军9000余人在泾县茂林地区被国民党军8万余人包围，血战七昼夜，3000余人突出重围，4000余人被俘或失散，3000余人壮烈牺牲。",
-    "per_capita_consumption": 0,
-    "business_hours": "全天开放",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/张自忠将军纪念馆.jpg"
-    ]
+    ],
+    "popularity": 58,
+    "score": 4.2
   },
   {
     "id": 167,
@@ -3227,58 +2864,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/重庆歌乐山烈士陵园.jpg"
-    ]
-  },
-  {
-    "id": 5,
-    "name": "安源路矿工人运动纪念馆",
-    "address": "江西省萍乡市安源区安源镇",
-    "longitude": 113.95,
-    "latitude": 27.6167,
-    "category": 1,
-    "brief_intro": "中国共产党领导工人运动的最早实践地之一",
-    "historical_background": "1922年，毛泽东、李立三、刘少奇等在此领导了安源路矿工人大罢工，这是中国共产党第一次独立领导并取得完全胜利的工人斗争。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:30（周一闭馆）",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/安源路矿工人运动纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 21,
-    "name": "双清别墅",
-    "address": "北京市海淀区香山公园内",
-    "longitude": 116.1934,
-    "latitude": 39.9911,
-    "category": 5,
-    "brief_intro": "毛泽东在香山的居住地",
-    "historical_background": "1949年3月25日，毛泽东等中央领导人进驻香山，双清别墅成为毛泽东同志的居住地，是筹建新中国的历史见证地。",
-    "per_capita_consumption": 15,
-    "business_hours": "06:00-18:00",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/九一八历史博物馆.jpg"
-    ]
-  },
-  {
-    "id": 24,
-    "name": "雷锋纪念馆",
-    "address": "辽宁省抚顺市望花区雷锋路东段61号",
-    "longitude": 123.9115,
-    "latitude": 41.8473,
-    "category": 1,
-    "brief_intro": "纪念共产主义战士雷锋的专题纪念馆",
-    "historical_background": "雷锋是新中国成立后涌现出的优秀共产主义战士，全心全意为人民服务的光辉典范，1962年因公殉职，年仅22岁。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:00（周一闭馆）",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/雷锋纪念馆.jpg"
-    ]
+    ],
+    "popularity": 78,
+    "score": 4.6
   },
   {
     "id": 144,
@@ -3295,41 +2883,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/娄山关红军战斗遗址.jpg"
-    ]
-  },
-  {
-    "id": 2,
-    "name": "南湖革命纪念馆",
-    "address": "浙江省嘉兴市南湖区烟雨路1号",
-    "longitude": 120.7575,
-    "latitude": 30.7536,
-    "category": 1,
-    "brief_intro": "纪念中共一大在南湖红船上闭幕的历史事件",
-    "historical_background": "1921年7月，中共一大因法租界巡捕袭扰，从上海转移到嘉兴南湖的一艘画舫上继续举行并胜利闭幕，庄严宣告了中国共产党的诞生。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:00（周一闭馆）",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/南湖革命纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 23,
-    "name": "抗美援朝纪念馆",
-    "address": "辽宁省丹东市振兴区山上街7号",
-    "longitude": 124.3835,
-    "latitude": 40.1258,
-    "category": 1,
-    "brief_intro": "纪念抗美援朝战争的专题纪念馆",
-    "historical_background": "1950-1953年，中国人民志愿军赴朝作战，与朝鲜军民并肩战斗，打败了以美国为首的联合国军，保卫了新中国的安全。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:30（周一闭馆）",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/抗美援朝纪念馆.jpg"
-    ]
+    ],
+    "popularity": 44,
+    "score": 4.0
   },
   {
     "id": 142,
@@ -3346,7 +2902,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/会宁红军长征胜利纪念馆.jpg"
-    ]
+    ],
+    "popularity": 43,
+    "score": 4.0
   },
   {
     "id": 61,
@@ -3363,7 +2921,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/秋收起义文家市会师旧址.jpg"
-    ]
+    ],
+    "popularity": 67,
+    "score": 4.4
   },
   {
     "id": 137,
@@ -3380,7 +2940,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/冉庄地道战遗址.jpg"
-    ]
+    ],
+    "popularity": 76,
+    "score": 4.5
   },
   {
     "id": 179,
@@ -3397,41 +2959,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/安源路矿工人运动纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 38,
-    "name": "八路军太行纪念馆",
-    "address": "山西省长治市武乡县太行街",
-    "longitude": 112.8361,
-    "latitude": 36.8333,
-    "category": 1,
-    "brief_intro": "全面反映八路军抗战历史的大型纪念馆",
-    "historical_background": "抗日战争时期，八路军在太行山区创建抗日根据地，开展了著名的百团大战等战役，为抗战胜利作出巨大贡献。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-17:00（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/八路军太行纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 233,
-    "name": "深圳改革开放展览馆",
-    "address": "广东省深圳市福田区福中路184号",
-    "longitude": 114.05,
-    "latitude": 22.55,
-    "category": 8,
-    "brief_intro": "深圳改革开放成就展",
-    "historical_background": "1979年，深圳成为经济特区，作为改革开放的窗口，创造了世界工业化、城市化、现代化史上的奇迹。",
-    "per_capita_consumption": 0,
-    "business_hours": "10:00-18:00（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/赵尚志纪念馆.jpg"
-    ]
+    ],
+    "popularity": 79,
+    "score": 4.7
   },
   {
     "id": 230,
@@ -3448,7 +2978,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/会宁红军长征胜利纪念馆.jpg"
-    ]
+    ],
+    "popularity": 52,
+    "score": 4.1
   },
   {
     "id": 240,
@@ -3465,41 +2997,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/左右江革命根据地.jpg"
-    ]
-  },
-  {
-    "id": 43,
-    "name": "平津战役纪念馆",
-    "address": "天津市红桥区平津道8号",
-    "longitude": 117.1346,
-    "latitude": 39.1518,
-    "category": 1,
-    "brief_intro": "纪念平津战役胜利的专题纪念馆",
-    "historical_background": "1948年11月-1949年1月，东北野战军和华北军区部队发起平津战役，歼灭和改编国民党军52万余人，基本解放华北全境。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:30（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/平津战役纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 28,
-    "name": "两弹城景区",
-    "address": "四川省绵阳市梓潼县文昌镇",
-    "longitude": 105.2278,
-    "latitude": 31.6472,
-    "category": 9,
-    "brief_intro": "中国工程物理研究院旧址，'两弹一星'精神发源地",
-    "historical_background": "1960年代，邓稼先等科学家在此研制核武器，成功研制出中国第一颗原子弹和氢弹，铸就了伟大的'两弹一星'精神。",
-    "per_capita_consumption": 4000,
-    "business_hours": "09:00-17:00",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/两弹城景区.jpg"
-    ]
+    ],
+    "popularity": 50,
+    "score": 4.2
   },
   {
     "id": 72,
@@ -3516,24 +3016,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/黎平会议会址.jpg"
-    ]
-  },
-  {
-    "id": 222,
-    "name": "红旗渠纪念馆",
-    "address": "河南省安阳市林州市红旗渠大道",
-    "longitude": 113.8,
-    "latitude": 36.0667,
-    "category": 1,
-    "brief_intro": "红旗渠精神发源地",
-    "historical_background": "1960-1969年，林县人民在太行山悬崖峭壁上修建红旗渠，解决了56万人用水问题，铸就了'自力更生、艰苦创业'的红旗渠精神。",
-    "per_capita_consumption": 800,
-    "business_hours": "08:00-18:00",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/北京大学红楼.jpg"
-    ]
+    ],
+    "popularity": 58,
+    "score": 4.1
   },
   {
     "id": 173,
@@ -3550,7 +3035,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/抗日山烈士陵园.jpg"
-    ]
+    ],
+    "popularity": 49,
+    "score": 4.0
   },
   {
     "id": 81,
@@ -3567,7 +3054,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/四渡赤水纪念馆.jpg"
-    ]
+    ],
+    "popularity": 42,
+    "score": 4.0
   },
   {
     "id": 123,
@@ -3584,7 +3073,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/上海四行仓库抗战纪念馆.jpg"
-    ]
+    ],
+    "popularity": 60,
+    "score": 4.2
   },
   {
     "id": 177,
@@ -3601,7 +3092,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/戴安澜将军纪念馆.jpg"
-    ]
+    ],
+    "popularity": 45,
+    "score": 4.0
   },
   {
     "id": 156,
@@ -3618,7 +3111,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/左右江革命根据地.jpg"
-    ]
+    ],
+    "popularity": 43,
+    "score": 4.0
   },
   {
     "id": 180,
@@ -3635,7 +3130,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/黄花塘新四军军部旧址.jpg"
-    ]
+    ],
+    "popularity": 58,
+    "score": 4.1
   },
   {
     "id": 185,
@@ -3652,7 +3149,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/中共一大纪念馆.jpg"
-    ]
+    ],
+    "popularity": 66,
+    "score": 4.4
   },
   {
     "id": 204,
@@ -3669,7 +3168,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/黄花岗七十二烈士墓园.jpg"
-    ]
+    ],
+    "popularity": 45,
+    "score": 4.0
   },
   {
     "id": 151,
@@ -3686,7 +3187,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/淮海战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 36,
+    "score": 4.0
   },
   {
     "id": 147,
@@ -3703,7 +3206,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/两弹城景区.jpg"
-    ]
+    ],
+    "popularity": 38,
+    "score": 4.0
   },
   {
     "id": 101,
@@ -3720,24 +3225,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/南湖革命纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 46,
-    "name": "香山革命纪念馆",
-    "address": "北京市海淀区买卖街40号",
-    "longitude": 116.1934,
-    "latitude": 39.9911,
-    "category": 1,
-    "brief_intro": "中共中央'进京赶考'第一站",
-    "historical_background": "1949年3月25日-9月21日，中共中央从西柏坡迁至香山，指挥了渡江战役，筹备了新政协，为新中国的成立作了充分准备。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-16:00（周一闭馆）",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/渡江战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 41,
+    "score": 4.0
   },
   {
     "id": 88,
@@ -3754,7 +3244,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/会宁红军长征胜利纪念馆.jpg"
-    ]
+    ],
+    "popularity": 63,
+    "score": 4.3
   },
   {
     "id": 77,
@@ -3771,41 +3263,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/中共一大纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 56,
-    "name": "两弹城景区",
-    "address": "四川省绵阳市梓潼县文昌镇",
-    "longitude": 105.2278,
-    "latitude": 31.6472,
-    "category": 9,
-    "brief_intro": "中国工程物理研究院旧址，'两弹一星'精神发源地",
-    "historical_background": "1960年代，邓稼先等科学家在此研制核武器，成功研制出中国第一颗原子弹和氢弹，铸就了伟大的'两弹一星'精神。",
-    "per_capita_consumption": 4000,
-    "business_hours": "09:00-17:00",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/两弹城景区.jpg"
-    ]
-  },
-  {
-    "id": 89,
-    "name": "将台堡红军长征会师纪念园",
-    "address": "宁夏固原市西吉县将台堡镇",
-    "longitude": 105.7167,
-    "latitude": 35.8667,
-    "category": 9,
-    "brief_intro": "红军长征将台堡会师纪念地",
-    "historical_background": "1936年10月22日，红一、二方面军在将台堡会师，是红军长征最后一次会师。",
-    "per_capita_consumption": 0,
-    "business_hours": "全天开放",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/南湖革命纪念馆.jpg"
-    ]
+    ],
+    "popularity": 60,
+    "score": 4.2
   },
   {
     "id": 200,
@@ -3822,7 +3282,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/方志敏纪念馆.jpg"
-    ]
+    ],
+    "popularity": 60,
+    "score": 4.2
   },
   {
     "id": 124,
@@ -3839,7 +3301,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/广州农民运动讲习所旧址.jpg"
-    ]
+    ],
+    "popularity": 48,
+    "score": 4.0
   },
   {
     "id": 138,
@@ -3856,7 +3320,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/百团大战纪念馆.jpg"
-    ]
+    ],
+    "popularity": 74,
+    "score": 4.4
   },
   {
     "id": 238,
@@ -3873,7 +3339,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/中山舰博物馆.jpg"
-    ]
+    ],
+    "popularity": 67,
+    "score": 4.3
   },
   {
     "id": 119,
@@ -3890,7 +3358,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/焦庄户地道战遗址纪念馆.jpg"
-    ]
+    ],
+    "popularity": 72,
+    "score": 4.4
   },
   {
     "id": 146,
@@ -3907,24 +3377,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/方志敏纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 94,
-    "name": "冉庄地道战遗址",
-    "address": "河北省保定市清苑区冉庄镇",
-    "longitude": 115.3667,
-    "latitude": 38.6333,
-    "category": 9,
-    "brief_intro": "保存完整的地道战遗址",
-    "historical_background": "1942年，冉庄人民挖掘地道与日军斗争，形成了户户相连、村村相通的地道网，是平原地区人民战争的典范。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:30",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/冉庄地道战遗址.jpg"
-    ]
+    ],
+    "popularity": 68,
+    "score": 4.3
   },
   {
     "id": 59,
@@ -3941,7 +3396,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/北京大学红楼.jpg"
-    ]
+    ],
+    "popularity": 76,
+    "score": 4.5
   },
   {
     "id": 78,
@@ -3958,7 +3415,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/强渡乌江渡口遗址.jpg"
-    ]
+    ],
+    "popularity": 53,
+    "score": 4.1
   },
   {
     "id": 131,
@@ -3975,24 +3434,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/塔山阻击战纪念馆.jpg"
-    ]
-  },
-  {
-    "id": 223,
-    "name": "兰考焦裕禄纪念园",
-    "address": "河南省开封市兰考县裕禄大道",
-    "longitude": 114.8,
-    "latitude": 34.8167,
-    "category": 1,
-    "brief_intro": "县委书记的好榜样",
-    "historical_background": "焦裕禄1962年任兰考县委书记，带领群众治理'三害'，1964年病逝，被誉为'县委书记的榜样'，铸就了焦裕禄精神。",
-    "per_capita_consumption": 0,
-    "business_hours": "08:30-17:30",
-    "created_at": "2026-01-10 18:02:07",
-    "updated_at": "2026-01-10 18:02:07",
-    "images": [
-      "attraction_images/刘老庄八十二烈士陵园.jpg"
-    ]
+    ],
+    "popularity": 43,
+    "score": 4.0
   },
   {
     "id": 118,
@@ -4009,7 +3453,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/塔山阻击战纪念馆.jpg"
-    ]
+    ],
+    "popularity": 46,
+    "score": 4.0
   },
   {
     "id": 70,
@@ -4026,24 +3472,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/闽西革命历史博物馆.jpg"
-    ]
-  },
-  {
-    "id": 1,
-    "name": "中共一大纪念馆",
-    "address": "上海市黄浦区兴业路76号",
-    "longitude": 121.4737,
-    "latitude": 31.2208,
-    "category": 3,
-    "brief_intro": "中国共产党第一次全国代表大会会址，中国革命的起源地",
-    "historical_background": "1921年7月，中国共产党第一次全国代表大会在此召开，宣告中国共产党正式成立。这是开天辟地的大事变，中国革命面貌从此焕然一新。",
-    "per_capita_consumption": 0,
-    "business_hours": "09:00-17:00（周一闭馆）",
-    "created_at": "2026-01-10 17:43:49",
-    "updated_at": "2026-01-10 17:43:49",
-    "images": [
-      "attraction_images/中共一大纪念馆.jpg"
-    ]
+    ],
+    "popularity": 75,
+    "score": 4.5
   },
   {
     "id": 96,
@@ -4060,7 +3491,9 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/渡江战役纪念馆.jpg"
-    ]
+    ],
+    "popularity": 75,
+    "score": 4.5
   },
   {
     "id": 95,
@@ -4077,6 +3510,8 @@
     "updated_at": "2026-01-10 18:02:07",
     "images": [
       "attraction_images/彭雪枫纪念馆.jpg"
-    ]
+    ],
+    "popularity": 54,
+    "score": 4.1
   }
 ]
