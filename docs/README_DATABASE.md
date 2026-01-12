@@ -47,6 +47,8 @@
 | created_at | TEXT | 创建时间 | |
 | updated_at | TEXT | 更新时间 | |
 | images | TEXT | 图片路径列表 | JSON 格式存储 |
+| popularity | INTEGER | 热度 | |
+| score | REAL | 评分 | |
 
 ### 2. 历史事件表 (historical_events)
 
