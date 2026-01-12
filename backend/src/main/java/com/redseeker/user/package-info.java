@@ -1,4 +1,4 @@
 /**
- * 用户管理模块（注册、登录、权限等）。
+ * User module: registration, login, profile, and behavior records.
  */
 package com.redseeker.user;

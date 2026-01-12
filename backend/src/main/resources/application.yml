@@ -2,9 +2,15 @@ spring:
   application:
     name: redseeker-backend
   datasource:
-    url: jdbc:mysql://localhost:3306/redseeker
-    username: root
-    password: password
+    url: jdbc:sqlite:../database/red_tourism.db
+    driver-class-name: org.sqlite.JDBC
+    username: 
+    password: 
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: true
 
 server:
   port: 8080

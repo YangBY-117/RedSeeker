@@ -2,84 +2,37 @@ package com.redseeker.recommend;
 
 import com.redseeker.common.ErrorCode;
 import com.redseeker.common.ServiceException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RecommendServiceImpl implements RecommendService {
+  private static final Logger LOGGER = LoggerFactory.getLogger(RecommendServiceImpl.class);
 
   private final AiService aiService;
+  private final String databaseUrl;
 
   public RecommendServiceImpl(AiService aiService) {
     this.aiService = aiService;
-  }
-  
-  // 模拟数据库中的景点数据
-  private static final List<RecommendItem> CATALOG = List.of(
-      new RecommendItem(
-          "1",
-          "中国共产党第一次全国代表大会会址",
-          "革命旧址",
-          List.of("建党", "上海", "历史", "旧址"),
-          0.95,
-          "中国共产党的诞生地，位于上海法租界望志路106号（今兴业路76号）。",
-          "见证建党伟业的核心地标，必访之地。"
-      ),
-      new RecommendItem(
-          "2",
-          "井冈山革命博物馆",
-          "博物馆",
-          List.of("井冈山", "革命", "根据地", "博物馆"),
-          0.90,
-          "纪念井冈山革命根据地斗争历史的综合性博物馆。",
-          "全面了解农村包围城市道路起点的最佳场所。"
-      ),
-      new RecommendItem(
-          "3",
-          "延安革命纪念馆",
-          "纪念馆",
-          List.of("延安", "精神", "革命", "纪念馆"),
-          0.92,
-          "展示中共中央在延安十三年领导中国革命的光辉历程。",
-          "延安精神的发源地，深刻感受艰苦奋斗精神。"
-      ),
-      new RecommendItem(
-          "4",
-          "遵义会议会址",
-          "重要会议",
-          List.of("遵义", "转折点", "红军", "会议"),
-          0.93,
-          "1935年召开的遵义会议挽救了党、挽救了红军、挽救了中国革命。",
-          "中国革命史上的转折点，具有极高的历史价值。"
-      ),
-      new RecommendItem(
-          "5",
-          "西柏坡纪念馆",
-          "纪念馆",
-          List.of("西柏坡", "解放战争", "赶考", "纪念馆"),
-          0.88,
-          "解放战争时期中央工委、中共中央和解放军总部的所在地。",
-          "新中国从这里走来，进京赶考的出发地。"
-      )
-  );
-
-  // 模拟用户评分数据 (UserId -> (ItemId -> Rating))
-  // 评分范围 1.0 - 5.0
-  private static final Map<Long, Map<String, Double>> MOCK_USER_RATINGS = new HashMap<>();
-
-  static {
-    // 用户 101：偏好早期革命地 (上海一大会址, 井冈山)
-    MOCK_USER_RATINGS.put(101L, Map.of("1", 5.0, "2", 4.5, "5", 3.0));
-    // 用户 102：偏好纪念馆 (延安, 西柏坡)
-    MOCK_USER_RATINGS.put(102L, Map.of("3", 5.0, "5", 4.8, "1", 3.5));
-    // 用户 103：全面覆盖，高评分
-    MOCK_USER_RATINGS.put(103L, Map.of("1", 4.0, "2", 4.0, "3", 4.0, "4", 4.0));
+    this.databaseUrl = resolveDatabaseUrl();
   }
 
   @Override
@@ -88,182 +41,438 @@ public class RecommendServiceImpl implements RecommendService {
       throw new ServiceException(ErrorCode.VALIDATION_ERROR, "city is required");
     }
 
-    return CATALOG.stream()
-        .map(item -> {
-            // 计算综合评分
-            double finalScore = calculateHybridScore(item, request);
-            String reason = generateSmartReason(item, request, finalScore);
-            
-            return new RecommendItem(
-                 item.getId(),
-                 item.getName(), 
-                 item.getCategory(),
-                 item.getTags(),
-                 finalScore, 
-                 item.getHistory(), 
-                 reason
-             );
-        })
+    List<AttractionRecord> attractions = loadAttractions(request.getCity());
+    if (attractions.isEmpty()) {
+      attractions = loadAttractions(null);
+    }
+    if (attractions.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    Map<String, Double> averageRatings = loadAverageRatings();
+    Map<String, Integer> browseCounts = loadBrowseCounts();
+    int maxBrowseCount =
+        browseCounts.values().stream().max(Integer::compareTo).orElse(0);
+
+    Map<Long, Map<String, Double>> allRatings = loadAllRatings();
+    Map<String, Double> targetUserRatings = Collections.emptyMap();
+    if (request.getUserId() != null) {
+      targetUserRatings = allRatings.getOrDefault(request.getUserId(), Collections.emptyMap());
+    }
+
+    List<RecommendItem> results = new ArrayList<>();
+    for (AttractionRecord attraction : attractions) {
+      List<String> tags = loadAttractionTags(attraction.getId(), request.getCity());
+      String category = formatCategory(attraction.getCategoryId());
+
+      double baseScore = calculateBaseScore(attraction.getId(), averageRatings, browseCounts, maxBrowseCount);
+      double contentScore = calculateContentScore(category, tags, request.getPreferences());
+      double cfScore = 0.0;
+      if (request.getUserId() != null && !allRatings.isEmpty()) {
+        cfScore = calculateUserBasedCFScore(targetUserRatings, allRatings, attraction.getId());
+      }
+
+      double finalScore;
+      if (request.getUserId() == null) {
+        finalScore = (baseScore * 0.4) + (contentScore * 0.6);
+      } else {
+        finalScore = (baseScore * 0.2) + (contentScore * 0.4) + (cfScore * 0.4);
+      }
+
+      String reason = generateReason(attraction, tags, request, finalScore, cfScore);
+      results.add(
+          new RecommendItem(
+              attraction.getId(),
+              attraction.getName(),
+              category,
+              tags,
+              finalScore,
+              attraction.getHistory(),
+              reason));
+    }
+
+    return results.stream()
         .sorted(Comparator.comparingDouble(RecommendItem::getScore).reversed())
         .collect(Collectors.toList());
   }
 
-  private double calculateHybridScore(RecommendItem item, RecommendRequest request) {
-      // 1. 基础热度分 (0.0 - 1.0)
-      double baseScore = item.getScore();
-      
-      // 2. 基于内容的推荐 (Content-Based Filtering)
-      double contentScore = calculateContentScore(item, request.getPreferences());
-      
-      // 3. 协同过滤推荐 (Collaborative Filtering)
-      double cfScore = 0.0;
-      if (request.getUserId() != null) {
-          cfScore = calculateUserBasedCFScore(request.getUserId(), item.getId());
-      }
-      
-      // 综合加权: 
-      // 如果没有用户ID(游客模式)，主要依赖内容匹配和基础热度
-      // 如果有用户ID，引入协同过滤
-      if (request.getUserId() == null) {
-          return (baseScore * 0.4) + (contentScore * 0.6);
-      } else {
-          return (baseScore * 0.2) + (contentScore * 0.4) + (cfScore * 0.4); 
-      }
-  }
-
-  // --- 基于内容的推荐算法 ---
-  private double calculateContentScore(RecommendItem item, List<String> preferences) {
-      if (preferences == null || preferences.isEmpty()) {
-          return 0.5; // 无偏好时给个中间分
-      }
-      
-      long matchCount = 0;
-      // 匹配分类
-      if (preferences.contains(item.getCategory())) {
-          matchCount += 2; // 分类匹配权重高
-      }
-      // 匹配标签
-      for (String tag : item.getTags()) {
-          if (preferences.contains(tag)) {
-              matchCount += 1;
-          }
-      }
-      
-      // 简单的归一化: 假设最大匹配度为 5
-      return Math.min(1.0, matchCount / 5.0);
-  }
-
-  // --- 基于用户的协同过滤算法 (User-Based CF) ---
-  private double calculateUserBasedCFScore(Long targetUserId, String targetItemId) {
-      Map<String, Double> targetUserRatings = MOCK_USER_RATINGS.get(targetUserId);
-      if (targetUserRatings == null || targetUserRatings.isEmpty()) {
-          return 0.5; // 冷启动用户
-      }
-      
-      // 如果用户已经评价过该物品，直接不推荐或者给低分？
-      // 这里假设我们要推荐用户没去过的，或者用户可能想重温的。
-      // 为简化，如果评分过，直接返回其评分归一化值，表示"很符合该用户口味"
-      if (targetUserRatings.containsKey(targetItemId)) {
-          return targetUserRatings.get(targetItemId) / 5.0;
-      }
-
-      double weightedSum = 0.0;
-      double similaritySum = 0.0;
-
-      for (Map.Entry<Long, Map<String, Double>> entry : MOCK_USER_RATINGS.entrySet()) {
-          Long otherUserId = entry.getKey();
-          if (otherUserId.equals(targetUserId)) continue;
-
-          Map<String, Double> otherUserRatings = entry.getValue();
-          
-          // 计算用户相似度 (使用余弦相似度)
-          double similarity = calculateCosineSimilarity(targetUserRatings, otherUserRatings);
-          
-          if (similarity > 0 && otherUserRatings.containsKey(targetItemId)) {
-              weightedSum += similarity * otherUserRatings.get(targetItemId);
-              similaritySum += similarity;
-          }
-      }
-
-      if (similaritySum == 0) {
-          return 0.5; // 无法预测
-      }
-
-      // 预测评分 (1-5) -> 归一化 (0.2-1.0)
-      double predictedRating = weightedSum / similaritySum;
-      return predictedRating / 5.0; 
-  }
-
-  private double calculateCosineSimilarity(Map<String, Double> ratings1, Map<String, Double> ratings2) {
-      double dotProduct = 0.0;
-      double norm1 = 0.0;
-      double norm2 = 0.0;
-
-      // 找共同评价过的物品
-      for (String itemId : ratings1.keySet()) {
-          if (ratings2.containsKey(itemId)) {
-              dotProduct += ratings1.get(itemId) * ratings2.get(itemId);
-          }
-          norm1 += Math.pow(ratings1.get(itemId), 2);
-      }
-      for (Double rating : ratings2.values()) {
-            norm2 += Math.pow(rating, 2);
-      }
-
-      if (norm1 == 0 || norm2 == 0) return 0.0;
-      return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
-  }
-
-  private String generateSmartReason(RecommendItem item, RecommendRequest request, double score) {
-      if (score > 0.85) {
-          List<String> hitPrefs = new ArrayList<>();
-          if (request.getPreferences() != null) {
-              for (String p : request.getPreferences()) {
-                  if (item.getCategory().contains(p) || item.getTags().contains(p)) {
-                      hitPrefs.add(p);
-                  }
-              }
-          }
-          
-          if (!hitPrefs.isEmpty()) {
-              return "根据您对 " + String.join("、", hitPrefs) + " 的兴趣强烈推荐。";
-          }
-          if (request.getUserId() != null && MOCK_USER_RATINGS.containsKey(request.getUserId())) {
-             return "根据相似用户的喜好为您精选。";
-          }
-      }
-      return item.getReason();
-  }
-
   @Override
   public AiPlanResponse generateAiPlan(AiPlanRequest request) {
-      // 构建提示词
-      String prompt = String.format(
-          "请为我设计一个红色旅游研学行程。城市：%s。天数：%d天。需求：%s。\n" +
-          "请直接返回一段纯文本的行程描述，无需JSON格式。",
-          request.getCity() != null ? request.getCity() : "如果不指定则默认上海",
-          request.getDays() != null ? request.getDays() : 2,
-          request.getPrompt()
-      );
+    String prompt =
+        String.format(
+            "Please design a red tourism itinerary. City: %s. Days: %d. Needs: %s.",
+            request.getCity() != null ? request.getCity() : "Shanghai",
+            request.getDays() != null ? request.getDays() : 2,
+            request.getPrompt());
 
-      // 调用AI
-      String aiOutput = aiService.generateContent(prompt);
+    String aiOutput = aiService.generateContent(prompt);
 
-      // 解析或封装结果
-      AiPlanResponse response = new AiPlanResponse();
-      response.setSummary("AI为您生成的个性化方案：");
-      
-      // 这里为了简单展示，将AI的全文放在第一天的描述中，或者尝试简单切分
-      // 在实际生产中，应要求AI返回JSON格式以便精确解析
-      
-      List<ItineraryPlan> plans = new ArrayList<>();
-      ItineraryPlan plan = new ItineraryPlan();
-      plan.setDay(1);
-      plan.setTitle("AI定制行程");
-      plan.setDescription(aiOutput); // 将AI返回的全部文本放入
-      plans.add(plan);
+    AiPlanResponse response = new AiPlanResponse();
+    response.setSummary("AI generated a personalized plan.");
 
-      response.setPlans(plans);
-      return response;
+    List<ItineraryPlan> plans = new ArrayList<>();
+    ItineraryPlan plan = new ItineraryPlan();
+    plan.setDay(1);
+    plan.setTitle("AI itinerary");
+    plan.setDescription(aiOutput);
+    plans.add(plan);
+
+    response.setPlans(plans);
+    return response;
+  }
+
+  private List<AttractionRecord> loadAttractions(String city) {
+    String baseSql =
+        "SELECT id, name, address, category, brief_intro, historical_background "
+            + "FROM attractions";
+    boolean filterCity = city != null && !city.isBlank();
+    String sql = baseSql;
+    if (filterCity) {
+      sql += " WHERE address LIKE ? OR name LIKE ?";
+    }
+
+    List<AttractionRecord> records = new ArrayList<>();
+    try (Connection connection = openConnection();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      if (filterCity) {
+        String pattern = "%" + city.trim() + "%";
+        statement.setString(1, pattern);
+        statement.setString(2, pattern);
+      }
+      try (ResultSet resultSet = statement.executeQuery()) {
+        while (resultSet.next()) {
+          records.add(
+              new AttractionRecord(
+                  String.valueOf(resultSet.getInt("id")),
+                  resultSet.getString("name"),
+                  resultSet.getString("address"),
+                  resultSet.getInt("category"),
+                  resultSet.getString("brief_intro"),
+                  resultSet.getString("historical_background")));
+        }
+      }
+    } catch (SQLException ex) {
+      LOGGER.error("Failed to load attractions", ex);
+      throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to load attractions");
+    }
+    return records;
+  }
+
+  private List<String> loadAttractionTags(String attractionId, String city) {
+    Set<String> tags = new HashSet<>();
+    if (city != null && !city.isBlank()) {
+      tags.add(city.trim());
+    }
+    String sql =
+        "SELECT he.event_name, he.period "
+            + "FROM historical_events he "
+            + "JOIN attraction_events ae ON ae.event_id = he.id "
+            + "WHERE ae.attraction_id = ?";
+    try (Connection connection = openConnection();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setInt(1, Integer.parseInt(attractionId));
+      try (ResultSet resultSet = statement.executeQuery()) {
+        while (resultSet.next()) {
+          addIfPresent(tags, resultSet.getString("event_name"));
+          addIfPresent(tags, resultSet.getString("period"));
+        }
+      }
+    } catch (SQLException ex) {
+      LOGGER.warn("Failed to load tags for attraction {}", attractionId, ex);
+    }
+    return tags.stream().sorted().collect(Collectors.toList());
+  }
+
+  private Map<String, Double> loadAverageRatings() {
+    String sql = "SELECT attraction_id, AVG(rating) AS avg_rating FROM attraction_ratings GROUP BY attraction_id";
+    Map<String, Double> result = new HashMap<>();
+    try (Connection connection = openConnection();
+        PreparedStatement statement = connection.prepareStatement(sql);
+        ResultSet resultSet = statement.executeQuery()) {
+      while (resultSet.next()) {
+        result.put(
+            String.valueOf(resultSet.getInt("attraction_id")),
+            resultSet.getDouble("avg_rating"));
+      }
+    } catch (SQLException ex) {
+      LOGGER.warn("Failed to load average ratings", ex);
+    }
+    return result;
+  }
+
+  private Map<String, Integer> loadBrowseCounts() {
+    String sql = "SELECT attraction_id, COUNT(*) AS cnt FROM user_browse_history GROUP BY attraction_id";
+    Map<String, Integer> result = new HashMap<>();
+    try (Connection connection = openConnection();
+        PreparedStatement statement = connection.prepareStatement(sql);
+        ResultSet resultSet = statement.executeQuery()) {
+      while (resultSet.next()) {
+        result.put(
+            String.valueOf(resultSet.getInt("attraction_id")),
+            resultSet.getInt("cnt"));
+      }
+    } catch (SQLException ex) {
+      LOGGER.warn("Failed to load browse counts", ex);
+    }
+    return result;
+  }
+
+  private Map<Long, Map<String, Double>> loadAllRatings() {
+    String sql = "SELECT user_id, attraction_id, rating FROM attraction_ratings";
+    Map<Long, Map<String, Double>> result = new HashMap<>();
+    try (Connection connection = openConnection();
+        PreparedStatement statement = connection.prepareStatement(sql);
+        ResultSet resultSet = statement.executeQuery()) {
+      while (resultSet.next()) {
+        long userId = resultSet.getLong("user_id");
+        String attractionId = String.valueOf(resultSet.getInt("attraction_id"));
+        double rating = resultSet.getDouble("rating");
+        result.computeIfAbsent(userId, key -> new HashMap<>()).put(attractionId, rating);
+      }
+    } catch (SQLException ex) {
+      LOGGER.warn("Failed to load ratings", ex);
+    }
+    return result;
+  }
+
+  private double calculateBaseScore(
+      String attractionId,
+      Map<String, Double> averageRatings,
+      Map<String, Integer> browseCounts,
+      int maxBrowseCount) {
+    Double rating = averageRatings.get(attractionId);
+    if (rating != null && rating > 0) {
+      return Math.min(1.0, rating / 5.0);
+    }
+    Integer browseCount = browseCounts.get(attractionId);
+    if (browseCount != null && browseCount > 0 && maxBrowseCount > 0) {
+      double normalized = (double) browseCount / (double) maxBrowseCount;
+      return Math.min(1.0, 0.2 + (normalized * 0.8));
+    }
+    return 0.5;
+  }
+
+  private double calculateContentScore(String category, List<String> tags, List<String> preferences) {
+    if (preferences == null || preferences.isEmpty()) {
+      return 0.5;
+    }
+
+    int matches = 0;
+    for (String preference : preferences) {
+      if (preference == null || preference.isBlank()) {
+        continue;
+      }
+      if (matchesPreference(category, preference)) {
+        matches += 2;
+      }
+      for (String tag : tags) {
+        if (matchesPreference(tag, preference)) {
+          matches += 1;
+        }
+      }
+    }
+
+    return Math.min(1.0, matches / 5.0);
+  }
+
+  private double calculateUserBasedCFScore(
+      Map<String, Double> targetUserRatings,
+      Map<Long, Map<String, Double>> allRatings,
+      String targetAttractionId) {
+    if (targetUserRatings == null || targetUserRatings.isEmpty()) {
+      return 0.5;
+    }
+
+    if (targetUserRatings.containsKey(targetAttractionId)) {
+      return targetUserRatings.get(targetAttractionId) / 5.0;
+    }
+
+    double weightedSum = 0.0;
+    double similaritySum = 0.0;
+
+    for (Map.Entry<Long, Map<String, Double>> entry : allRatings.entrySet()) {
+      Map<String, Double> otherRatings = entry.getValue();
+      if (otherRatings == targetUserRatings) {
+        continue;
+      }
+      double similarity = calculateCosineSimilarity(targetUserRatings, otherRatings);
+      if (similarity > 0 && otherRatings.containsKey(targetAttractionId)) {
+        weightedSum += similarity * otherRatings.get(targetAttractionId);
+        similaritySum += similarity;
+      }
+    }
+
+    if (similaritySum == 0.0) {
+      return 0.5;
+    }
+
+    double predictedRating = weightedSum / similaritySum;
+    return predictedRating / 5.0;
+  }
+
+  private double calculateCosineSimilarity(
+      Map<String, Double> ratings1, Map<String, Double> ratings2) {
+    double dotProduct = 0.0;
+    double norm1 = 0.0;
+    double norm2 = 0.0;
+
+    for (Map.Entry<String, Double> entry : ratings1.entrySet()) {
+      String itemId = entry.getKey();
+      double rating = entry.getValue();
+      norm1 += rating * rating;
+      Double otherRating = ratings2.get(itemId);
+      if (otherRating != null) {
+        dotProduct += rating * otherRating;
+      }
+    }
+
+    for (double rating : ratings2.values()) {
+      norm2 += rating * rating;
+    }
+
+    if (norm1 == 0.0 || norm2 == 0.0) {
+      return 0.0;
+    }
+    return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
+  }
+
+  private String generateReason(
+      AttractionRecord attraction,
+      List<String> tags,
+      RecommendRequest request,
+      double finalScore,
+      double cfScore) {
+    if (request.getPreferences() != null && !request.getPreferences().isEmpty()) {
+      List<String> hits =
+          request.getPreferences().stream()
+              .filter(pref -> matchesAny(pref, tags))
+              .collect(Collectors.toList());
+      if (!hits.isEmpty()) {
+        return "Matches your interests: " + String.join(", ", hits);
+      }
+    }
+    if (request.getUserId() != null && cfScore > 0.7) {
+      return "Recommended based on similar users' preferences.";
+    }
+    if (finalScore > 0.8) {
+      return "High overall relevance for your trip.";
+    }
+    if (attraction.getHistory() != null && !attraction.getHistory().isBlank()) {
+      return attraction.getHistory();
+    }
+    return "Recommended for your itinerary.";
+  }
+
+  private boolean matchesAny(String preference, List<String> tags) {
+    if (preference == null || preference.isBlank()) {
+      return false;
+    }
+    for (String tag : tags) {
+      if (matchesPreference(tag, preference)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean matchesPreference(String text, String preference) {
+    if (text == null || preference == null) {
+      return false;
+    }
+    String trimmedText = text.trim();
+    String trimmedPref = preference.trim();
+    if (trimmedText.isEmpty() || trimmedPref.isEmpty()) {
+      return false;
+    }
+    return trimmedText.contains(trimmedPref) || trimmedPref.contains(trimmedText);
+  }
+
+  private void addIfPresent(Set<String> tags, String value) {
+    if (value != null && !value.isBlank()) {
+      tags.add(value.trim());
+    }
+  }
+
+  private String formatCategory(int categoryId) {
+    switch (categoryId) {
+      case 1:
+        return "革命旧址";
+      case 2:
+        return "名人故居";
+      case 3:
+        return "纪念馆";
+      case 4:
+        return "烈士陵园";
+      case 5:
+        return "爱国主义教育基地";
+      default:
+        return "Category-" + categoryId;
+    }
+  }
+
+  private Connection openConnection() throws SQLException {
+    return DriverManager.getConnection(databaseUrl);
+  }
+
+  private String resolveDatabaseUrl() {
+    String override = System.getenv("REDSEEKER_DB_PATH");
+    if (override != null && !override.isBlank()) {
+      return "jdbc:sqlite:" + override;
+    }
+    Path direct = Paths.get("database", "red_tourism.db");
+    if (Files.exists(direct)) {
+      return "jdbc:sqlite:" + direct.toAbsolutePath();
+    }
+    Path parent = Paths.get("..", "database", "red_tourism.db");
+    if (Files.exists(parent)) {
+      return "jdbc:sqlite:" + parent.toAbsolutePath();
+    }
+    return "jdbc:sqlite:database/red_tourism.db";
+  }
+
+  private static final class AttractionRecord {
+    private final String id;
+    private final String name;
+    private final String address;
+    private final int categoryId;
+    private final String briefIntro;
+    private final String history;
+
+    private AttractionRecord(
+        String id,
+        String name,
+        String address,
+        int categoryId,
+        String briefIntro,
+        String history) {
+      this.id = id;
+      this.name = name;
+      this.address = address;
+      this.categoryId = categoryId;
+      this.briefIntro = briefIntro;
+      this.history = history;
+    }
+
+    private String getId() {
+      return id;
+    }
+
+    private String getName() {
+      return name;
+    }
+
+    private int getCategoryId() {
+      return categoryId;
+    }
+
+    private String getHistory() {
+      if (history != null && !history.isBlank()) {
+        return history;
+      }
+      if (briefIntro != null && !briefIntro.isBlank()) {
+        return briefIntro;
+      }
+      return address;
+    }
   }
 }

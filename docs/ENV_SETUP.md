@@ -9,7 +9,7 @@
 - **Maven & Node.js**:
     - **推荐**: 使用项目自带的 `setup_tools.ps1` 脚本自动配置（无需手动安装）
     - 自行安装要求: Maven 3.9+, Node.js 20+
-- **数据库**: *选型中，暂不需要安装*
+- **数据库**: **SQLite** (文件已包含在项目中，无需安装)
 
 ## 2. 快速启动脚本 (环境自动配置)
 
@@ -24,13 +24,33 @@
 
 > **重要提示**: 每次打开新的 VS Code 终端准备开发时，请先运行此命令以加载 Maven 和 Node.js 环境变量。
 
+**验证安装:**
+运行以下命令，应输出对应版本号：
+```powershell
+mvn -v   # 应显示 Maven 3.9.6
+node -v  # 应显示 v20.10.0
+```
+
 ## 3. 后端（Spring Boot）环境配置
 
 ### 3.1 启动准备
 
 确保已安装 JDK 17+，并已在当前终端运行了环境配置脚本。
 
-### 3.2 本地运行
+### 3.2 配置 AI 服务密钥
+
+项目使用智谱 AI (Zhipu AI) 提供行程生成服务。
+请打开 `backend/src/main/resources/application.yml` 文件，找到以下配置：
+
+```yaml
+zhipu:
+  api:
+    key: "your_api_key_here" # 请替换为真实有效的 API Key
+```
+
+> 申请地址: [智谱AI开放平台](https://open.bigmodel.cn/)
+
+### 3.3 本地运行
 
 进入 `backend/` 目录：
 
@@ -42,7 +62,7 @@ mvn clean install
 mvn spring-boot:run
 ```
 
-> **特别说明**: 由于数据库选型未定，后端已配置为排除 `DataSourceAutoConfiguration`，启动时**不需要**连接数据库。
+> **特别说明**: 后端已配置为连接 SQLite 数据库，数据库文件位于 `../database/red_tourism.db`。请确保该文件存在。
 
 ## 4. 前端（Vue 3 + Vite）环境配置
 
@@ -60,11 +80,13 @@ npm run dev
 
 ## 5. 数据库环境配置
 
-**状态：选型未定**
+**状态：已配置 (SQLite)**
 
-- 目前开发阶段**暂不需要安装数据库**。
-- 后端代码已做特殊处理，可以在无数据库状态下运行。
-- 待选型确定后，将在此处更新具体的安装指南。
+- 项目使用 **SQLite** 数据库，无需安装额外的数据库服务器。
+- 数据库文件位于项目根目录的 `database/red_tourism.db`。
+- 后端已配置 JDBC 连接，开箱即用。
+
+> 详细表结构与数据说明请参考: [README_DATABASE.md](./README_DATABASE.md)
 
 ## 6. 常见问题排查
 
