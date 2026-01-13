@@ -6,6 +6,7 @@
 
 本项目在 `tools_setup` 目录下内置了特定版本的 Maven 和 Node.js，无需全局安装。
 
+sdfhiuoahdifbaisuo
 ### 必修项
 - **Java JDK**: 需要预先安装 JDK 17+ 并配置好 `JAVA_HOME` (测试环境使用的是 JDK 23)。
 
