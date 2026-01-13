@@ -396,15 +396,15 @@ public class RecommendServiceImpl implements RecommendService {
   private String formatCategory(int categoryId) {
     switch (categoryId) {
       case 1:
-        return "革命旧址";
+        return "Revolutionary Site";
       case 2:
-        return "名人故居";
+        return "Celebrity Residence";
       case 3:
-        return "纪念馆";
+        return "Memorial Hall";
       case 4:
-        return "烈士陵园";
+        return "Martyr Cemetery";
       case 5:
-        return "爱国主义教育基地";
+        return "Patriotic Education Base";
       default:
         return "Category-" + categoryId;
     }

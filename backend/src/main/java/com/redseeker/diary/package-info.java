@@ -1,4 +1,4 @@
 /**
- * 旅游日记模块（CRUD 与推荐）。
+ * Travel diary module (CRUD and recommendations).
  */
 package com.redseeker.diary;

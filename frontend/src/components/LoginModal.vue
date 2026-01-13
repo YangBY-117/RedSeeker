@@ -88,7 +88,7 @@
             />
           </div>
           
-          <div v-if="registerError" class="error-message">
+          <div v-if="registerError" class="error-message" style="white-space: pre-line;">
             {{ registerError }}
           </div>
           
@@ -119,7 +119,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:visible', 'close'])
 
-const { login } = useAuth()
+const { login, register } = useAuth()
 
 // 模式：'login' 或 'register'，默认登录
 const mode = ref('login')
@@ -192,11 +192,11 @@ const handleLogin = async () => {
   }
 }
 
-// 处理注册（暂时只显示错误提示，因为后端还没有注册接口）
+// 处理注册
 const handleRegister = async () => {
   registerError.value = ''
   
-  // 验证密码
+  // 前端验证
   if (registerForm.value.password !== registerForm.value.confirmPassword) {
     registerError.value = '两次输入的密码不一致'
     return
@@ -212,8 +212,25 @@ const handleRegister = async () => {
     return
   }
   
-  // 注册功能需要后端支持，这里暂时提示
-  registerError.value = '注册功能暂未开放，请联系管理员'
+  isLoading.value = true
+  
+  try {
+    // 调用后端注册API
+    console.log('🔄 调用注册API...')
+    await register(registerForm.value.username, registerForm.value.password)
+    console.log('✅ 注册成功，关闭弹窗')
+    handleClose()
+  } catch (error) {
+    console.error('❌ 注册处理失败:', error)
+    // 显示详细的错误信息
+    registerError.value = error.message || '注册失败，请稍后重试'
+    // 在开发环境下，也在控制台显示更详细的信息
+    if (import.meta.env.DEV) {
+      console.error('   错误详情:', error)
+    }
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 

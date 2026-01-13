@@ -1,4 +1,4 @@
 /**
- * 场所查询模块（景点、餐饮等查询）。
+ * Place search module (attractions, restaurants, etc.).
  */
 package com.redseeker.place;

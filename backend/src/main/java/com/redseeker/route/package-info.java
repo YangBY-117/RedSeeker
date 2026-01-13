@@ -1,4 +1,4 @@
 /**
- * 路径规划模块（最短路径、多点规划、交通方式）。
+ * Route planning module (shortest path, multi-point planning, transportation modes).
  */
 package com.redseeker.route;

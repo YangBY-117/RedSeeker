@@ -2,9 +2,9 @@ package com.redseeker.recommend;
 
 public interface AiService {
     /**
-     * 调用AI模型生成内容
-     * @param prompt 提示词
-     * @return AI生成的内容
+     * Generate content using AI model
+     * @param prompt prompt text
+     * @return AI generated content
      */
     String generateContent(String prompt);
 }

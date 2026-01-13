@@ -1,4 +1,4 @@
 /**
- * 通用基础组件（DTO、异常、响应封装等）。
+ * Common base components (DTO, exceptions, response wrappers, etc.).
  */
 package com.redseeker.common;
