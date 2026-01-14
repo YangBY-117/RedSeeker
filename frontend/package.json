@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "extract-data": "node scripts/extractAttractions-quick.cjs",
-    "test-db": "node scripts/test-db.cjs"
+    "test-db": "node scripts/test-db.cjs",
+    "test:register": "node ../scripts/test-register.js"
   },
   "dependencies": {
     "axios": "^1.13.2",
@@ -17,6 +18,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",
+    "playwright": "^1.57.0",
     "sql.js": "^1.10.3",
     "vite": "^5.0.0"
   }

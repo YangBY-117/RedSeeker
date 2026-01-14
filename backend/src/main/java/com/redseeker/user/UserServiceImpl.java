@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,6 +24,7 @@ public class UserServiceImpl implements UserService {
   private static final String INVALID_CREDENTIALS = "invalid username or password";
 
   private final String databaseUrl;
+  private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
   public UserServiceImpl() {
     this.databaseUrl = resolveDatabaseUrl();
@@ -38,15 +40,16 @@ public class UserServiceImpl implements UserService {
     if (findUserByUsername(username) != null) {
       throw new ServiceException(ErrorCode.VALIDATION_ERROR, "username already exists");
     }
-    String hashed = BCrypt.hashpw(password, BCrypt.gensalt());
+    String hashed = passwordEncoder.encode(password);
     String sql = "INSERT INTO users (username, password) VALUES (?, ?)";
     try (Connection connection = openConnection();
-        PreparedStatement statement =
-            connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setString(1, username);
       statement.setString(2, hashed);
       statement.executeUpdate();
-      try (ResultSet keys = statement.getGeneratedKeys()) {
+      try (PreparedStatement idStatement =
+              connection.prepareStatement("SELECT last_insert_rowid()");
+          ResultSet keys = idStatement.executeQuery()) {
         if (keys.next()) {
           long userId = keys.getLong(1);
           return getProfile(userId);
@@ -68,7 +71,7 @@ public class UserServiceImpl implements UserService {
     }
 
     UserRecord record = findUserByUsername(username);
-    if (record == null || !BCrypt.checkpw(password, record.password)) {
+    if (record == null || !passwordEncoder.matches(password, record.password)) {
       throw new ServiceException(ErrorCode.VALIDATION_ERROR, INVALID_CREDENTIALS);
     }
 
@@ -121,7 +124,7 @@ public class UserServiceImpl implements UserService {
         sql.append(", ");
       }
       sql.append("password = ?");
-      params.add(BCrypt.hashpw(password, BCrypt.gensalt()));
+      params.add(passwordEncoder.encode(password));
     }
     sql.append(" WHERE id = ?");
     params.add(record.id);
