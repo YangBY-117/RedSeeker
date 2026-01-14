@@ -41,17 +41,15 @@ public class RecommendServiceImpl implements RecommendService {
       throw new ServiceException(ErrorCode.VALIDATION_ERROR, "city is required");
     }
 
-    List<AttractionRecord> attractions = loadAttractions(request.getCity());
-    if (attractions.isEmpty()) {
-      attractions = loadAttractions(null);
-    }
+    // Always recommend all attractions in database; only use city for scoring/tags.
+    List<AttractionRecord> attractions = loadAttractions(null);
     if (attractions.isEmpty()) {
       return Collections.emptyList();
     }
 
     Map<String, Double> averageRatings = loadAverageRatings();
+    Map<String, Integer> ratingCounts = loadRatingCounts();
     Map<String, Integer> browseCounts = loadBrowseCounts();
-    Map<String, Integer> totalRatingsCount = loadTotalRatingsCount();
     int maxBrowseCount =
         browseCounts.values().stream().max(Integer::compareTo).orElse(0);
 
@@ -82,10 +80,10 @@ public class RecommendServiceImpl implements RecommendService {
 
       String reason = generateReason(attraction, tags, request, finalScore, cfScore);
       
-      // Get rating and heat data from database
+      // Get rating data
       Double avgRating = averageRatings.get(attraction.getId());
-      Integer totalRatings = totalRatingsCount.getOrDefault(attraction.getId(), 0);
-      Integer heatScore = browseCounts.getOrDefault(attraction.getId(), 0);
+      Integer totalRatings = ratingCounts.get(attraction.getId());
+      Integer browseCount = browseCounts.get(attraction.getId());
       
       results.add(
           new RecommendItem(
@@ -97,11 +95,14 @@ public class RecommendServiceImpl implements RecommendService {
               attraction.getHistory(),
               reason,
               attraction.getAddress(),
+              attraction.getBusinessHours(),
+              attraction.getPerCapitaConsumption(),
               avgRating,
               totalRatings,
-              heatScore));
+              browseCount));
     }
 
+    // Sort by score from high to low (descending)
     return results.stream()
         .sorted(Comparator.comparingDouble(RecommendItem::getScore).reversed())
         .collect(Collectors.toList());
@@ -134,7 +135,7 @@ public class RecommendServiceImpl implements RecommendService {
 
   private List<AttractionRecord> loadAttractions(String city) {
     String baseSql =
-        "SELECT id, name, address, category, brief_intro, historical_background "
+        "SELECT id, name, address, category, brief_intro, historical_background, business_hours, per_capita_consumption "
             + "FROM attractions";
     boolean filterCity = city != null && !city.isBlank();
     String sql = baseSql;
@@ -159,7 +160,9 @@ public class RecommendServiceImpl implements RecommendService {
                   resultSet.getString("address"),
                   resultSet.getInt("category"),
                   resultSet.getString("brief_intro"),
-                  resultSet.getString("historical_background")));
+                  resultSet.getString("historical_background"),
+                  resultSet.getString("business_hours"),
+                  resultSet.getDouble("per_capita_consumption")));
         }
       }
     } catch (SQLException ex) {
@@ -211,6 +214,23 @@ public class RecommendServiceImpl implements RecommendService {
     return result;
   }
 
+  private Map<String, Integer> loadRatingCounts() {
+    String sql = "SELECT attraction_id, COUNT(*) AS cnt FROM attraction_ratings GROUP BY attraction_id";
+    Map<String, Integer> result = new HashMap<>();
+    try (Connection connection = openConnection();
+        PreparedStatement statement = connection.prepareStatement(sql);
+        ResultSet resultSet = statement.executeQuery()) {
+      while (resultSet.next()) {
+        result.put(
+            String.valueOf(resultSet.getInt("attraction_id")),
+            resultSet.getInt("cnt"));
+      }
+    } catch (SQLException ex) {
+      LOGGER.warn("Failed to load rating counts", ex);
+    }
+    return result;
+  }
+
   private Map<String, Integer> loadBrowseCounts() {
     String sql = "SELECT attraction_id, COUNT(*) AS cnt FROM user_browse_history GROUP BY attraction_id";
     Map<String, Integer> result = new HashMap<>();
@@ -224,23 +244,6 @@ public class RecommendServiceImpl implements RecommendService {
       }
     } catch (SQLException ex) {
       LOGGER.warn("Failed to load browse counts", ex);
-    }
-    return result;
-  }
-
-  private Map<String, Integer> loadTotalRatingsCount() {
-    String sql = "SELECT attraction_id, COUNT(*) AS cnt FROM attraction_ratings GROUP BY attraction_id";
-    Map<String, Integer> result = new HashMap<>();
-    try (Connection connection = openConnection();
-        PreparedStatement statement = connection.prepareStatement(sql);
-        ResultSet resultSet = statement.executeQuery()) {
-      while (resultSet.next()) {
-        result.put(
-            String.valueOf(resultSet.getInt("attraction_id")),
-            resultSet.getInt("cnt"));
-      }
-    } catch (SQLException ex) {
-      LOGGER.warn("Failed to load total ratings count", ex);
     }
     return result;
   }
@@ -465,6 +468,8 @@ public class RecommendServiceImpl implements RecommendService {
     private final int categoryId;
     private final String briefIntro;
     private final String history;
+    private final String businessHours;
+    private final Double perCapitaConsumption;
 
     private AttractionRecord(
         String id,
@@ -472,13 +477,17 @@ public class RecommendServiceImpl implements RecommendService {
         String address,
         int categoryId,
         String briefIntro,
-        String history) {
+        String history,
+        String businessHours,
+        Double perCapitaConsumption) {
       this.id = id;
       this.name = name;
       this.address = address;
       this.categoryId = categoryId;
       this.briefIntro = briefIntro;
       this.history = history;
+      this.businessHours = businessHours;
+      this.perCapitaConsumption = perCapitaConsumption;
     }
 
     private String getId() {
@@ -489,12 +498,20 @@ public class RecommendServiceImpl implements RecommendService {
       return name;
     }
 
+    private String getAddress() {
+      return address;
+    }
+
     private int getCategoryId() {
       return categoryId;
     }
 
-    private String getAddress() {
-      return address;
+    private String getBusinessHours() {
+      return businessHours;
+    }
+
+    private Double getPerCapitaConsumption() {
+      return perCapitaConsumption;
     }
 
     private String getHistory() {
