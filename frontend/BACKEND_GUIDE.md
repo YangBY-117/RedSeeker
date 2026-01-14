@@ -89,75 +89,91 @@ Authorization: Bearer {token}
 
 #### 3. 获取推荐景点
 
-**接口地址**: `GET /api/recommend/attractions`
+**接口地址**: `POST /api/recommend/list`
 
-**请求参数**:
-- `category` (integer, 可选): 类别ID（1-9），不传则推荐所有类别
+**请求体**:
+```json
+{
+  "city": "上海",
+  "userId": 1,
+  "preferences": ["革命", "历史"],
+  "travelStyle": "文化",
+  "days": 2
+}
+```
+
+**请求参数说明**:
+- `city` (string, 必填): 城市名称
 - `userId` (integer, 可选): 用户ID，用于个性化推荐（需要登录）
+- `preferences` (array, 可选): 偏好标签数组
+- `travelStyle` (string, 可选): 旅行风格
+- `days` (integer, 可选): 出行天数
 
 **成功响应 (200)**:
 ```json
 {
   "success": true,
-  "data": {
-    "attractions": [
-      {
-        "id": 1,
-        "name": "景点名称",
-        "address": "地址",
-        "longitude": 121.4737,
-        "latitude": 31.2208,
-        "category": 1,
-        "categoryName": "纪念馆",
-        "brief_intro": "简介",
-        "historical_background": "历史背景",
-        "per_capita_consumption": 0,
-        "business_hours": "09:00-17:00",
-        "average_rating": 4.5,
-        "total_ratings": 120,
-        "heat_score": 120,
-        "recommend_score": 85.5
-      }
-    ],
-    "total": 10
-  }
+  "message": "OK",
+  "data": [
+    {
+      "id": "1",
+      "name": "景点名称",
+      "category": "Memorial Hall",
+      "tags": ["革命", "历史"],
+      "score": 0.85,
+      "history": "历史背景",
+      "reason": "推荐理由",
+      "address": "地址",
+      "averageRating": 4.5,
+      "totalRatings": 120,
+      "heatScore": 120
+    }
+  ]
 }
 ```
 
+**响应数据说明**：
+- 返回景点数组，已按 `score`（推荐分数，0.0-1.0）从高到低排序
+- **注意**：后端可能根据数据库实际数据量返回，不一定是所有景点（当前测试环境返回约9个景点）
+- `category` 为英文类别名（如 "Memorial Hall", "Revolutionary Site"）
+- 前端需要自行处理分页、类别筛选、排序等功能
+
+**图片资源**：
+- 图片存储在 `database/attraction_images/` 目录
+- 后端需要配置静态资源映射：`/images/attractions/**` -> `database/attraction_images/`
+- 图片文件名格式：`{景点名称}.jpg`（URL编码）
+- 前端构建图片URL：`http://{backend_host}/images/attractions/{景点名称}.jpg`
+
 **推荐算法要求**：
-- 使用**堆排序**获取 Top10 景点
-- 推荐分数计算公式：`recommend_score = 历史脉络分数(30%) + 教育价值分数(20%) + 热度分数(30%) + 评价分数(20%)`
-- 历史脉络分数：根据景点关联的历史事件时间顺序（越早越重要，可简单按ID或时间排序）
-- 教育价值分数：根据历史背景长度和完整性（可简化为固定值或根据简介长度）
-- 热度分数：根据 `heat_score`（评价总数）归一化
-- 评价分数：根据 `average_rating` 归一化（1-5分转换为0-100分）
-- 如果提供 `userId`，根据用户浏览历史调整分数（浏览过的景点降低分数，避免重复推荐）
+- **返回所有景点**，按推荐分数从高到低排序（不是只返回Top10）
+- 推荐分数计算公式：
+  - 未登录用户：`finalScore = baseScore(40%) + contentScore(60%)`
+  - 已登录用户：`finalScore = baseScore(20%) + contentScore(40%) + cfScore(40%)`
+- `baseScore`：基础分数，根据平均评分和浏览热度计算
+- `contentScore`：内容匹配分数，根据用户偏好和景点标签匹配度计算
+- `cfScore`：协同过滤分数，根据相似用户的评分计算（仅已登录用户）
+- 所有景点按 `finalScore` 从高到低排序后返回
+- 前端负责分页显示，后端返回完整排序列表
 
 #### 4. 搜索景点
 
-**接口地址**: `GET /api/recommend/search`
+**接口地址**: `POST /api/recommend/list`（与推荐接口相同）
 
-**请求参数**:
-- `keyword` (string, 必填): 搜索关键词
-- `category` (integer, 可选): 类别筛选
-- `sortBy` (string, 可选): 排序方式，可选值：`heat`（热度）、`rating`（评价），默认 `heat`
-- `limit` (integer, 可选): 返回数量，默认10
-
-**成功响应 (200)**:
+**请求体**:
 ```json
 {
-  "success": true,
-  "data": {
-    "attractions": [ /* 同推荐接口格式 */ ],
-    "total": 10
-  }
+  "city": "全国",
+  "preferences": ["关键词"],
+  "userId": 1
 }
 ```
 
-**功能要求**：
-- 在景点名称、简介、历史背景中搜索关键词
-- 支持按热度和评价排序
-- 使用堆排序获取 Top N 结果
+**说明**：
+- 搜索功能使用推荐接口，将关键词作为 `preferences` 传入
+- 后端会根据偏好匹配景点标签和类别
+- 前端可以进一步筛选包含关键词的景点（在名称、历史背景、标签中）
+- 前端负责按热度和评价排序
+- 返回所有匹配的景点，按推荐分数排序
 
 #### 5. 记录用户浏览
 
@@ -889,56 +905,57 @@ String sql = "SELECT ae.attraction_id, e.id as event_id, e.event_name, e.start_y
 
 ### 2. 推荐算法实现
 
-**核心算法：堆排序（Top10）**
+**核心算法：返回景点列表，按推荐分数排序**
 
 ```java
 // 伪代码示例
-PriorityQueue<AttractionScore> heap = new PriorityQueue<>(10, Comparator.comparing(AttractionScore::getScore));
+List<RecommendItem> results = new ArrayList<>();
 
-for (Attraction attraction : allAttractions) {
-    double score = calculateRecommendScore(attraction, userId);
-    if (heap.size() < 10) {
-        heap.offer(new AttractionScore(attraction, score));
-    } else if (score > heap.peek().getScore()) {
-        heap.poll();
-        heap.offer(new AttractionScore(attraction, score));
-    }
+// 从数据库加载景点（根据城市筛选，如果没有匹配则加载所有）
+List<AttractionRecord> attractions = loadAttractions(city);
+if (attractions.isEmpty()) {
+    attractions = loadAttractions(null); // 加载所有景点
 }
 
-// 转换为列表并排序
-List<Attraction> top10 = heap.stream()
-    .sorted(Comparator.comparing(AttractionScore::getScore).reversed())
-    .map(AttractionScore::getAttraction)
+for (AttractionRecord attraction : attractions) {
+    // 计算基础分数（根据评分和热度）
+    double baseScore = calculateBaseScore(attraction, averageRatings, browseCounts);
+    
+    // 计算内容匹配分数（根据用户偏好和景点标签）
+    double contentScore = calculateContentScore(attraction, preferences);
+    
+    // 计算协同过滤分数（如果用户已登录）
+    double cfScore = 0.0;
+    if (userId != null) {
+        cfScore = calculateUserBasedCFScore(userId, attraction, allRatings);
+    }
+    
+    // 计算最终分数
+    double finalScore;
+    if (userId == null) {
+        finalScore = (baseScore * 0.4) + (contentScore * 0.6);
+    } else {
+        finalScore = (baseScore * 0.2) + (contentScore * 0.4) + (cfScore * 0.4);
+    }
+    
+    results.add(new RecommendItem(attraction, finalScore, ...));
+}
+
+// 按分数从高到低排序，返回景点列表
+// 注意：返回的景点数量取决于数据库中的实际数据量
+return results.stream()
+    .sorted(Comparator.comparingDouble(RecommendItem::getScore).reversed())
     .collect(Collectors.toList());
 ```
 
 **推荐分数计算**：
-```java
-double calculateRecommendScore(Attraction attraction, Integer userId) {
-    // 历史脉络分数 (30%)
-    double historyScore = calculateHistoryScore(attraction) * 0.3;
-    
-    // 教育价值分数 (20%)
-    double educationScore = calculateEducationScore(attraction) * 0.2;
-    
-    // 热度分数 (30%) - 根据评价总数归一化
-    double heatScore = normalizeHeatScore(attraction.getHeatScore()) * 0.3;
-    
-    // 评价分数 (20%) - 根据平均评分归一化
-    double ratingScore = normalizeRatingScore(attraction.getAverageRating()) * 0.2;
-    
-    double totalScore = historyScore + educationScore + heatScore + ratingScore;
-    
-    // 如果提供userId，根据浏览历史调整
-    if (userId != null) {
-        if (hasUserBrowsed(userId, attraction.getId())) {
-            totalScore *= 0.5; // 浏览过的景点降低分数
-        }
-    }
-    
-    return totalScore;
-}
-```
+- **baseScore**：基础分数，根据平均评分和浏览热度计算
+- **contentScore**：内容匹配分数，根据用户偏好和景点标签匹配度计算
+- **cfScore**：协同过滤分数，根据相似用户的评分计算（仅已登录用户）
+- **finalScore**：
+  - 未登录：`baseScore(40%) + contentScore(60%)`
+  - 已登录：`baseScore(20%) + contentScore(40%) + cfScore(40%)`
+- **返回**：所有景点按 `finalScore` 从高到低排序，前端负责分页显示
 
 ### 3. 密码验证
 
@@ -987,7 +1004,7 @@ params.put("destination", endLongitude + "," + endLatitude);
 // 调用API并解析返回的路径信息
 ```
 
-### 7. 多景点路线规划算法
+### 8. 多景点路线规划算法
 
 **历史阶段优先策略（history_first）**：
 
@@ -1008,7 +1025,7 @@ params.put("destination", endLongitude + "," + endLatitude);
 // 起点 + 所有景点作为途经点 + 终点
 ```
 
-### 8. 硅基流动API集成（可选）
+### 9. 硅基流动API集成（可选）
 
 **API密钥**：`sk-isqxgxwcscmjjyaqyamsqgvqkxiqgtlgrorrnagmiqnuyunq`
 
@@ -1047,8 +1064,9 @@ params.put("destination", endLongitude + "," + endLatitude);
 3. **CORS 配置**：确保配置 CORS 允许前端域名访问（通常是 `http://localhost:5173`）
 4. **错误处理**：不要向客户端暴露敏感信息
 5. **输入验证**：所有用户输入必须验证
-6. **算法效率**：推荐算法使用堆排序，时间复杂度 O(n log k)，其中 n 是景点总数，k=10
+6. **算法效率**：推荐算法计算所有景点的分数并排序，时间复杂度 O(n log n)，其中 n 是景点总数
 7. **数据动态性**：推荐分数需要实时计算，考虑数据动态变化
+8. **分页处理**：后端返回所有景点，前端负责分页、类别筛选、排序等功能
 
 ## 测试
 
@@ -1060,12 +1078,15 @@ curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"user1","password":"password123"}'
 
-# 获取推荐（替换 {token} 为登录返回的 token）
-curl -X GET "http://localhost:8080/api/recommend/attractions?category=1" \
-  -H "Authorization: Bearer {token}"
+# 获取推荐
+curl -X POST http://localhost:8080/api/recommend/list \
+  -H "Content-Type: application/json" \
+  -d '{"city":"上海","userId":1}'
 
-# 搜索景点
-curl -X GET "http://localhost:8080/api/recommend/search?keyword=纪念馆&sortBy=heat"
+# 搜索景点（使用推荐接口，关键词作为preferences）
+curl -X POST http://localhost:8080/api/recommend/list \
+  -H "Content-Type: application/json" \
+  -d '{"city":"全国","preferences":["纪念馆"]}'
 
 # 记录浏览
 curl -X POST http://localhost:8080/api/recommend/browse \
