@@ -1,0 +1,16 @@
+-------------------------------------------------------------------------------
+Test set: com.redseeker.recommend.RecommendControllerTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 3.077 s <<< FAILURE! -- in com.redseeker.recommend.RecommendControllerTest
+com.redseeker.recommend.RecommendControllerTest.testGetRecommendations_ContentBased -- Time elapsed: 0.119 s <<< FAILURE!
+java.lang.AssertionError: JSON path "$.data[0].category" expected:<革命旧址> but was:<Category-9>
+	at org.springframework.test.util.AssertionErrors.fail(AssertionErrors.java:59)
+	at org.springframework.test.util.AssertionErrors.assertEquals(AssertionErrors.java:122)
+	at org.springframework.test.util.JsonPathExpectationsHelper.assertValue(JsonPathExpectationsHelper.java:123)
+	at org.springframework.test.web.servlet.result.JsonPathResultMatchers.lambda$value$2(JsonPathResultMatchers.java:111)
+	at org.springframework.test.web.servlet.MockMvc$1.andExpect(MockMvc.java:214)
+	at com.redseeker.recommend.RecommendControllerTest.testGetRecommendations_ContentBased(RecommendControllerTest.java:46)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)
+
