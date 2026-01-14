@@ -12,6 +12,7 @@ com\redseeker\recommend\RecommendService.class
 com\redseeker\user\package-info.class
 com\redseeker\user\UserRatingUpdateRequest.class
 com\redseeker\recommend\RecommendServiceImpl.class
+com\redseeker\config\WebMvcConfig.class
 com\redseeker\user\UserRegisterRequest.class
 com\redseeker\common\package-info.class
 com\redseeker\recommend\RecommendItem.class
@@ -20,6 +21,7 @@ com\redseeker\user\UserBrowseResponse.class
 com\redseeker\place\package-info.class
 com\redseeker\recommend\AiPlanRequest.class
 com\redseeker\user\BCrypt.class
+com\redseeker\recommend\RecommendBrowseRequest.class
 com\redseeker\recommend\RecommendServiceImpl$AttractionRecord.class
 com\redseeker\user\UserProfileUpdateRequest.class
 com\redseeker\common\ServiceException.class

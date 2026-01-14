@@ -2,13 +2,13 @@
   <div class="attraction-card">
     <div class="card-image">
       <img
-        v-if="attraction.image_url"
+        v-if="attraction.image_url && !showPlaceholder"
         :src="attraction.image_url"
         :alt="attraction.name"
         class="card-image-img"
         @error="handleImageError"
       />
-      <div v-else class="image-placeholder">
+      <div v-if="!attraction.image_url || showPlaceholder" class="image-placeholder">
         <span class="image-icon">🏛️</span>
       </div>
       <div class="card-category-badge">{{ attraction.categoryName || attraction.category }}</div>
@@ -74,7 +74,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouteCart } from '../composables/useRouteCart'
 
 const props = defineProps({
@@ -87,6 +87,7 @@ const props = defineProps({
 const { addAttraction, removeAttraction, isSelected: checkIsSelected } = useRouteCart()
 
 const isSelected = computed(() => checkIsSelected(props.attraction.id))
+const showPlaceholder = ref(false)
 
 const handleToggleRoute = () => {
   if (isSelected.value) {
@@ -97,12 +98,10 @@ const handleToggleRoute = () => {
 }
 
 const handleImageError = (event) => {
-  // 图片加载失败时，隐藏图片显示占位符
+  // 图片加载失败时，显示占位符
+  console.warn('图片加载失败:', props.attraction.image_url, props.attraction.name)
+  showPlaceholder.value = true
   event.target.style.display = 'none'
-  const placeholder = event.target.nextElementSibling
-  if (placeholder && placeholder.classList.contains('image-placeholder')) {
-    placeholder.style.display = 'flex'
-  }
 }
 </script>
 

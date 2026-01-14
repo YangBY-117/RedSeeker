@@ -110,8 +110,9 @@ export function useAuth() {
         throw new Error('注册响应格式错误，请联系管理员')
       }
       
-      // 检查 success 字段
-      if (response.data.success === false) {
+      // 检查 success 字段（使用 isSuccess() 或 success 字段）
+      // Jackson 会将 isSuccess() 序列化为 "success" 字段
+      if (response.data.success === false || response.data.isSuccess === false) {
         const errorMsg = response.data.message || '注册失败'
         console.error('❌ 注册失败:', errorMsg)
         throw new Error(errorMsg)
@@ -123,11 +124,19 @@ export function useAuth() {
         throw new Error('注册响应格式错误，请联系管理员')
       }
       
-      const { token: newToken, user: userData } = response.data.data
+      // 检查 data 中的 token 和 user
+      const loginData = response.data.data
+      const newToken = loginData.token
+      const userData = loginData.user
       
       if (!newToken) {
         console.error('❌ 注册响应中缺少 token:', response.data)
         throw new Error('注册成功但未返回登录凭证，请联系管理员')
+      }
+      
+      if (!userData) {
+        console.error('❌ 注册响应中缺少 user:', response.data)
+        throw new Error('注册成功但未返回用户信息，请联系管理员')
       }
       
       // 保存 token 和用户信息
@@ -136,6 +145,7 @@ export function useAuth() {
       isAuthenticated.value = true
       localStorage.setItem('token', newToken)
       
+      console.log('✅ 注册成功，已保存 token 和用户信息')
       return { token: newToken, user: userData }
     } catch (error) {
       // 详细错误日志

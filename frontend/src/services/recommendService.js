@@ -49,33 +49,58 @@ export async function getRecommendations(params = {}) {
   })
 
   try {
+    console.log('📡 调用后端推荐API:', { requestBody, url: '/recommend/list' })
     const response = await api.post('/recommend/list', requestBody)
+    console.log('✅ 后端返回数据:', {
+      success: response.data?.success,
+      message: response.data?.message,
+      dataLength: response.data?.data?.length,
+      firstItem: response.data?.data?.[0],
+      allCategories: [...new Set(response.data?.data?.map(item => item.category) || [])]
+    })
     let attractions = response.data.data || []
-
-    // 如果有类别筛选，在前端进行筛选（如果后端不支持）
-    if (category) {
-      attractions = attractions.filter(attr => {
-        // 根据 category 字段或 tags 进行筛选
-        return attr.category === category || 
-               (attr.tags && attr.tags.some(tag => {
-                 const categoryMap = {
-                   1: '纪念馆', 2: '烈士陵园', 3: '会议旧址', 4: '战役遗址',
-                   5: '名人故居', 6: '革命根据地', 7: '纪念碑塔', 8: '博物馆', 9: '其他纪念地'
-                 }
-                 return tag.includes(categoryMap[category])
-               }))
-      })
-    }
-
-    // 前端排序（如果后端已排序，这里可以跳过）
-    if (sortBy === 'heat') {
-      attractions.sort((a, b) => (b.heat_score || 0) - (a.heat_score || 0))
-    } else if (sortBy === 'rating') {
-      attractions.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0))
+    
+    if (!attractions || attractions.length === 0) {
+      console.warn('⚠️ 后端返回的景点列表为空，请检查后端是否正常返回数据')
     } else {
-      // 推荐排序（按 score）
-      attractions.sort((a, b) => (b.score || 0) - (a.score || 0))
+      console.log(`✅ 后端返回了 ${attractions.length} 个景点，准备处理`)
+      console.log(`   类别分布:`, Object.entries(
+        attractions.reduce((acc, item) => {
+          acc[item.category] = (acc[item.category] || 0) + 1
+          return acc
+        }, {})
+      ))
     }
+
+    // 后端已返回所有景点，按推荐分数从高到低排序
+    // 前端只负责类别筛选、排序和分页
+    
+    // 类别筛选：将前端类别ID映射到后端英文类别名
+    if (category) {
+      const categoryIdToEnglish = {
+        1: 'Memorial Hall',            // 纪念馆
+        2: 'Martyr Cemetery',         // 烈士陵园
+        3: 'Memorial Hall',            // 会议旧址
+        4: 'Revolutionary Site',      // 战役遗址
+        5: 'Celebrity Residence',     // 名人故居
+        6: 'Revolutionary Site',       // 革命根据地
+        7: 'Martyr Cemetery',          // 纪念碑塔
+        8: 'Memorial Hall',            // 博物馆
+        9: 'Patriotic Education Base'  // 其他纪念地
+      }
+      const englishCategory = categoryIdToEnglish[category]
+      const beforeFilter = attractions.length
+      attractions = attractions.filter(attr => attr.category === englishCategory)
+      console.log(`🔍 类别筛选: ${beforeFilter} -> ${attractions.length} (筛选类别: ${category} -> ${englishCategory})`)
+    }
+
+    // 前端排序（后端已按推荐分数排序，但前端可能需要按其他方式排序）
+    if (sortBy === 'heat') {
+      attractions.sort((a, b) => (b.heatScore || 0) - (a.heatScore || 0))
+    } else if (sortBy === 'rating') {
+      attractions.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))
+    }
+    // sortBy === 'recommend' 时，保持后端排序（按 score），不需要重新排序
 
     // 分页
     const total = attractions.length
@@ -83,17 +108,63 @@ export async function getRecommendations(params = {}) {
     const end = start + pageSize
     const paginatedAttractions = attractions.slice(start, end)
 
-    // 处理图片路径
-    const processedAttractions = paginatedAttractions.map(attr => ({
-      ...attr,
-      // 构建图片路径：如果后端返回了图片路径，使用它；否则根据名称查找
-      image_url: attr.image_url || getAttractionImageUrl(attr.name),
-      // 确保有必要的字段
-      average_rating: attr.average_rating || 0,
-      total_ratings: attr.total_ratings || 0,
-      heat_score: attr.heat_score || 0,
-      recommend_score: attr.score ? attr.score * 100 : 0
-    }))
+    // 将英文类别翻译成中文
+    const categoryMap = {
+      'Revolutionary Site': '革命遗址',
+      'Celebrity Residence': '名人故居',
+      'Memorial Hall': '纪念馆',
+      'Martyr Cemetery': '烈士陵园',
+      'Patriotic Education Base': '爱国主义教育基地',
+      'Category-1': '革命遗址',
+      'Category-2': '名人故居',
+      'Category-3': '纪念馆',
+      'Category-4': '烈士陵园',
+      'Category-5': '爱国主义教育基地',
+      'Category-6': '革命根据地',
+      'Category-7': '纪念碑塔',
+      'Category-8': '博物馆',
+      'Category-9': '其他纪念地'
+    }
+
+    // 处理图片路径和数据格式转换
+    const processedAttractions = paginatedAttractions.map(attr => {
+      // 将英文类别翻译成中文
+      const categoryName = categoryMap[attr.category] || attr.category || '其他'
+      
+      // 将 score (0.0-1.0) 转换为 recommend_score (0-100)
+      const recommendScore = attr.score ? Math.round(attr.score * 100) : 0
+      
+      return {
+        ...attr,
+        // 基本信息
+        id: String(attr.id), // 确保 id 是字符串
+        name: attr.name || '',
+        // 类别（中文）
+        categoryName: categoryName,
+        category: categoryName, // 兼容性
+        // 图片路径
+        image_url: attr.image_url || getAttractionImageUrl(attr.name),
+        // 调试：输出图片URL
+        _debug_image_url: getAttractionImageUrl(attr.name),
+        // 简介和历史
+        brief_intro: attr.history || attr.brief_intro || attr.reason || '',
+        history: attr.history || '',
+        reason: attr.reason || '',
+        // 推荐分数
+        recommend_score: recommendScore,
+        score: attr.score || 0,
+        // 标签
+        tags: attr.tags || [],
+        // 使用后端返回的真实数据
+        address: attr.address || '',
+        business_hours: attr.business_hours || '全天开放',
+        per_capita_consumption: attr.per_capita_consumption || 0,
+        // 使用后端返回的评分和热度数据（从数据库计算）
+        average_rating: attr.averageRating !== null && attr.averageRating !== undefined ? attr.averageRating : (attr.average_rating || 4.5),
+        total_ratings: attr.totalRatings !== null && attr.totalRatings !== undefined ? attr.totalRatings : (attr.total_ratings || 0),
+        heat_score: attr.heatScore !== null && attr.heatScore !== undefined ? attr.heatScore : (attr.heat_score || 0)
+      }
+    })
 
     return {
       success: true,
@@ -106,7 +177,16 @@ export async function getRecommendations(params = {}) {
       }
     }
   } catch (error) {
-    console.error('获取推荐列表失败:', error)
+    console.error('❌ 获取推荐列表失败:', error)
+    if (error.response) {
+      console.error('   响应状态:', error.response.status)
+      console.error('   响应数据:', error.response.data)
+    } else if (error.request) {
+      console.error('   请求已发出但未收到响应，可能是后端未启动')
+    } else {
+      console.error('   请求设置错误:', error.message)
+    }
+    // 抛出错误，让调用方处理（不要返回假数据）
     throw error
   }
 }
@@ -155,24 +235,34 @@ export async function searchAttractions(params = {}) {
     })
 
     // 类别筛选
+    // 后端返回的 category 是英文（如 "Memorial Hall"），需要将数字类别ID映射到英文类别名
     if (category) {
+      // 数字类别ID到后端英文类别名的映射（根据后端 RecommendServiceImpl.formatCategory）
+      // 后端数据库category字段映射：1=Revolutionary Site, 2=Celebrity Residence, 3=Memorial Hall, 4=Martyr Cemetery, 5=Patriotic Education Base
+      // 前端类别ID映射：1=纪念馆, 2=烈士陵园, 3=会议旧址, 4=战役遗址, 5=名人故居, 6=革命根据地, 7=纪念碑塔, 8=博物馆, 9=其他纪念地
+      const categoryIdToEnglish = {
+        1: 'Memorial Hall',            // 纪念馆 -> 后端category=3 -> "Memorial Hall"
+        2: 'Martyr Cemetery',         // 烈士陵园 -> 后端category=4 -> "Martyr Cemetery"
+        3: 'Memorial Hall',            // 会议旧址 -> 后端category=3 -> "Memorial Hall"
+        4: 'Revolutionary Site',      // 战役遗址 -> 后端category=1 -> "Revolutionary Site"
+        5: 'Celebrity Residence',     // 名人故居 -> 后端category=2 -> "Celebrity Residence"
+        6: 'Revolutionary Site',       // 革命根据地 -> 后端category=1 -> "Revolutionary Site"
+        7: 'Martyr Cemetery',          // 纪念碑塔 -> 后端category=4 -> "Martyr Cemetery"
+        8: 'Memorial Hall',            // 博物馆 -> 后端category=3 -> "Memorial Hall"
+        9: 'Patriotic Education Base'  // 其他纪念地 -> 后端category=5 -> "Patriotic Education Base"
+      }
+      
+      const englishCategory = categoryIdToEnglish[category]
       attractions = attractions.filter(attr => {
-        return attr.category === category || 
-               (attr.tags && attr.tags.some(tag => {
-                 const categoryMap = {
-                   1: '纪念馆', 2: '烈士陵园', 3: '会议旧址', 4: '战役遗址',
-                   5: '名人故居', 6: '革命根据地', 7: '纪念碑塔', 8: '博物馆', 9: '其他纪念地'
-                 }
-                 return tag.includes(categoryMap[category])
-               }))
+        return attr.category === englishCategory
       })
     }
 
     // 排序
     if (sortBy === 'heat') {
-      attractions.sort((a, b) => (b.heat_score || 0) - (a.heat_score || 0))
+      attractions.sort((a, b) => (b.heatScore || 0) - (a.heatScore || 0))
     } else if (sortBy === 'rating') {
-      attractions.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0))
+      attractions.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0))
     }
 
     // 分页
@@ -181,22 +271,61 @@ export async function searchAttractions(params = {}) {
     const end = start + pageSize
     const paginatedAttractions = attractions.slice(start, end)
 
-    // 处理图片路径和数据格式
-    const processedAttractions = paginatedAttractions.map(attr => ({
-      ...attr,
-      image_url: attr.image_url || attr.imageUrl || getAttractionImageUrl(attr.name),
-      id: attr.id || attr.attractionId,
-      name: attr.name || attr.attractionName,
-      categoryName: attr.categoryName || attr.category || '其他',
-      average_rating: attr.average_rating || attr.rating || 0,
-      total_ratings: attr.total_ratings || attr.ratingCount || 0,
-      heat_score: attr.heat_score || attr.heatScore || attr.total_ratings || 0,
-      recommend_score: attr.score ? attr.score * 100 : (attr.recommend_score || 0),
-      address: attr.address || '',
-      brief_intro: attr.brief_intro || attr.history || '',
-      business_hours: attr.business_hours || '',
-      per_capita_consumption: attr.per_capita_consumption || 0
-    }))
+    // 将英文类别翻译成中文
+    const categoryMap = {
+      'Revolutionary Site': '革命遗址',
+      'Celebrity Residence': '名人故居',
+      'Memorial Hall': '纪念馆',
+      'Martyr Cemetery': '烈士陵园',
+      'Patriotic Education Base': '爱国主义教育基地',
+      'Category-1': '革命遗址',
+      'Category-2': '名人故居',
+      'Category-3': '纪念馆',
+      'Category-4': '烈士陵园',
+      'Category-5': '爱国主义教育基地',
+      'Category-6': '革命根据地',
+      'Category-7': '纪念碑塔',
+      'Category-8': '博物馆',
+      'Category-9': '其他纪念地'
+    }
+
+    // 处理图片路径和数据格式转换
+    const processedAttractions = paginatedAttractions.map(attr => {
+      // 将英文类别翻译成中文
+      const categoryName = categoryMap[attr.category] || attr.category || '其他'
+      
+      // 将 score (0.0-1.0) 转换为 recommend_score (0-100)
+      const recommendScore = attr.score ? Math.round(attr.score * 100) : 0
+      
+      return {
+        ...attr,
+        // 基本信息
+        id: String(attr.id || attr.attractionId || ''),
+        name: attr.name || attr.attractionName || '',
+        // 类别（中文）
+        categoryName: categoryName,
+        category: categoryName, // 兼容性
+        // 图片路径
+        image_url: attr.image_url || attr.imageUrl || getAttractionImageUrl(attr.name || attr.attractionName),
+        // 简介和历史
+        brief_intro: attr.history || attr.brief_intro || attr.reason || '',
+        history: attr.history || '',
+        reason: attr.reason || '',
+        // 推荐分数
+        recommend_score: recommendScore,
+        score: attr.score || 0,
+        // 标签
+        tags: attr.tags || [],
+        // 使用后端返回的真实数据
+        address: attr.address || '',
+        business_hours: attr.business_hours || '全天开放',
+        per_capita_consumption: attr.per_capita_consumption || 0,
+        // 使用后端返回的评分和热度数据（从数据库计算）
+        average_rating: attr.averageRating !== null && attr.averageRating !== undefined ? attr.averageRating : (attr.average_rating || attr.rating || 4.5),
+        total_ratings: attr.totalRatings !== null && attr.totalRatings !== undefined ? attr.totalRatings : (attr.total_ratings || attr.ratingCount || 0),
+        heat_score: attr.heatScore !== null && attr.heatScore !== undefined ? attr.heatScore : (attr.heat_score || 0)
+      }
+    })
 
     return {
       success: true,
@@ -224,24 +353,43 @@ function getAttractionImageUrl(attractionName) {
   
   // 构建图片路径：后端需要提供静态资源服务
   // 图片存储在 database/attraction_images/ 目录
-  // 后端应该配置静态资源映射：/api/images/attractions/{filename}
+  // 后端应该配置静态资源映射：/images/attractions/{filename}
   // 图片文件名格式：{景点名称}.jpg
   const imageName = encodeURIComponent(attractionName + '.jpg')
-  const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-  // 注意：静态资源路径通常不在 /api 下，而是直接在根路径下
+  
+  // 获取基础URL，移除 /api 后缀（如果存在）
+  let baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+  if (baseURL.endsWith('/api')) {
+    baseURL = baseURL.slice(0, -4) // 移除 '/api'
+  }
+  
+  // 静态资源路径不在 /api 下
   return `${baseURL}/images/attractions/${imageName}`
 }
 
 /**
  * 记录用户浏览历史
- * @param {number} attractionId - 景点ID
+ * @param {string|number} attractionId - 景点ID
  * @returns {Promise<void>}
  */
 export async function recordBrowse(attractionId) {
   try {
-    await api.post('/recommend/browse', { attraction_id: attractionId })
+    // 检查是否已登录（需要token才能记录浏览历史）
+    const token = localStorage.getItem('token')
+    if (!token) {
+      // 未登录，不记录浏览历史
+      return
+    }
+    
+    // 后端期望的字段名是 attraction_id（通过 @JsonProperty 注解）
+    const id = typeof attractionId === 'string' ? parseInt(attractionId, 10) : attractionId
+    await api.post('/recommend/browse', { attraction_id: id })
   } catch (error) {
-    console.error('记录浏览历史失败:', error)
-    // 不抛出错误，避免影响用户体验
+    // 静默失败，不影响用户体验
+    if (error.response?.status === 401) {
+      // 401 表示未授权，可能是token过期，清除token
+      localStorage.removeItem('token')
+    }
+    // 不输出错误日志，避免控制台噪音
   }
 }

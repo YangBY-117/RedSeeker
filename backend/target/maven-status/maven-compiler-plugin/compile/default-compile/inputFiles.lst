@@ -12,6 +12,7 @@ C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\recommend\R
 C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\user\AuthTokenStore.java
 C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\user\BCrypt.java
 C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\config\CorsConfig.java
+C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\recommend\RecommendBrowseRequest.java
 C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\diary\package-info.java
 C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\user\UserRatingUpdateRequest.java
 C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\user\UserProfileUpdateRequest.java
@@ -37,3 +38,4 @@ C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\common\Glob
 C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\user\AuthController.java
 C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\user\UserBrowseRequest.java
 C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\recommend\AiService.java
+C:\Users\25019\Desktop\RedSeeker\backend\src\main\java\com\redseeker\config\WebMvcConfig.java
