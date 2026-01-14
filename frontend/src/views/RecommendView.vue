@@ -25,15 +25,6 @@
         </button>
       </div>
 
-      <!-- 排序选择 -->
-      <div class="sort-section">
-        <label class="sort-label">排序：</label>
-        <select v-model="sortBy" @change="handleSortChange" class="sort-select">
-          <option value="recommend">推荐排序</option>
-          <option value="heat">按热度</option>
-          <option value="rating">按评价</option>
-        </select>
-      </div>
     </div>
 
     <!-- 推荐列表 -->
@@ -81,7 +72,6 @@ import { getRecommendations, searchAttractions, recordBrowse } from '../services
 
 const searchKeyword = ref('')
 const selectedCategory = ref(null)
-const sortBy = ref('recommend')
 const attractions = ref([])
 const loading = ref(false)
 const currentPage = ref(1)
@@ -90,7 +80,7 @@ const total = ref(0)
 const totalPages = ref(1)
 
 const categories = [
-  { id: null, name: '推荐' },
+  { id: null, name: '全部' },
   { id: 1, name: '纪念馆' },
   { id: 2, name: '烈士陵园' },
   { id: 3, name: '会议旧址' },
@@ -112,14 +102,12 @@ const loadAttractions = async (page = 1) => {
       response = await searchAttractions({
         keyword: searchKeyword.value.trim(),
         category: selectedCategory.value,
-        sortBy: sortBy.value,
         page,
         pageSize: pageSize.value
       })
     } else {
       response = await getRecommendations({
         category: selectedCategory.value,
-        sortBy: sortBy.value,
         page,
         pageSize: pageSize.value,
         userId: user.value?.id
@@ -151,11 +139,6 @@ const loadAttractions = async (page = 1) => {
 
 const selectCategory = (categoryId) => {
   selectedCategory.value = categoryId
-  currentPage.value = 1
-  loadAttractions(1)
-}
-
-const handleSortChange = () => {
   currentPage.value = 1
   loadAttractions(1)
 }
@@ -246,35 +229,7 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(198, 40, 40, 0.2);
 }
 
-.sort-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.sort-label {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-}
-
-.sort-select {
-  padding: 8px 16px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  background: white;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.sort-select:focus {
-  outline: none;
-  border-color: var(--color-primary, #c62828);
-}
-
-.attractions-section {
+  .attractions-section {
   min-height: 400px;
   margin-bottom: 32px;
 }
@@ -355,10 +310,6 @@ onMounted(() => {
     flex-wrap: nowrap;
     padding-bottom: 8px;
     -webkit-overflow-scrolling: touch;
-  }
-  
-  .sort-section {
-    justify-content: space-between;
   }
   
   .attractions-grid {

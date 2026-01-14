@@ -19,7 +19,19 @@
         <h3 class="card-title">{{ attraction.name }}</h3>
         <div class="card-score">
           <span class="score-label">推荐</span>
-          <span class="score-value">{{ attraction.recommend_score }}</span>
+          <div class="score-container">
+            <span class="score-value">{{ attraction.recommend_score }}</span>
+            <div v-if="attraction.reason" class="reason-tooltip-wrapper">
+              <span class="reason-icon">💡</span>
+              <div class="reason-tooltip">
+                <div class="tooltip-arrow"></div>
+                <div class="tooltip-content">
+                  <div class="tooltip-title">推荐理由</div>
+                  <div class="tooltip-text">{{ attraction.reason }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -97,9 +109,22 @@ const handleToggleRoute = () => {
 }
 
 const handleImageError = (event) => {
-  // 图片加载失败时，隐藏图片显示占位符
-  event.target.style.display = 'none'
-  const placeholder = event.target.nextElementSibling
+  const img = event.target
+  const attractionName = props.attraction.name
+  
+  // 如果当前src不是public路径，尝试使用public路径
+  if (img.src && !img.src.includes('/attraction_images/')) {
+    const publicImageUrl = `/attraction_images/${encodeURIComponent(attractionName)}.jpg`
+    // 避免循环错误
+    if (img.src !== publicImageUrl) {
+      img.src = publicImageUrl
+      return
+    }
+  }
+  
+  // 如果public路径也失败，显示占位符
+  img.style.display = 'none'
+  const placeholder = img.nextElementSibling
   if (placeholder && placeholder.classList.contains('image-placeholder')) {
     placeholder.style.display = 'flex'
   }
@@ -201,11 +226,86 @@ const handleImageError = (event) => {
   margin-bottom: 2px;
 }
 
+.score-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
 .score-value {
   font-size: 20px;
   font-weight: 700;
   color: var(--color-primary, #c62828);
   line-height: 1;
+}
+
+.reason-tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.reason-icon {
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.reason-icon:hover {
+  transform: scale(1.2);
+}
+
+.reason-tooltip {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.reason-tooltip-wrapper:hover .reason-tooltip {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.tooltip-arrow {
+  position: absolute;
+  bottom: -6px;
+  right: 20px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(0, 0, 0, 0.9);
+}
+
+.tooltip-content {
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  min-width: 200px;
+  max-width: 300px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tooltip-title {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #ffd700;
+}
+
+.tooltip-text {
+  font-size: 13px;
+  line-height: 1.5;
+  word-wrap: break-word;
 }
 
 .card-intro {
