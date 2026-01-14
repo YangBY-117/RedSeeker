@@ -25,8 +25,12 @@ public class UserController {
   }
 
   @PostMapping("/register")
-  public ApiResponse<UserProfileResponse> register(@Valid @RequestBody UserRegisterRequest request) {
-    return ApiResponse.ok(userService.register(request));
+  public ApiResponse<LoginResponse> register(@Valid @RequestBody UserRegisterRequest request) {
+    userService.register(request);
+    UserLoginRequest loginRequest = new UserLoginRequest();
+    loginRequest.setUsername(request.getUsername());
+    loginRequest.setPassword(request.getPassword());
+    return ApiResponse.ok(userService.login(loginRequest));
   }
 
   @PostMapping("/login")

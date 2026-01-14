@@ -28,4 +28,6 @@ public interface UserService {
   void deleteRating(Long id, Long userId);
 
   void assertAuthorized(String token, Long userId);
+
+  Long resolveUserId(String token);
 }

@@ -339,6 +339,11 @@ public class UserServiceImpl implements UserService {
     }
   }
 
+  @Override
+  public Long resolveUserId(String token) {
+    return AuthTokenStore.resolveUserId(token);
+  }
+
   private UserBrowseResponse getBrowseById(Long id, Long userId) {
     String sql =
         "SELECT id, user_id, attraction_id, browse_time FROM user_browse_history "

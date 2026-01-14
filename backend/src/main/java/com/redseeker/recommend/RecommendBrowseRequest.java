@@ -1,0 +1,18 @@
+package com.redseeker.recommend;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotNull;
+
+public class RecommendBrowseRequest {
+  @JsonProperty("attraction_id")
+  @NotNull(message = "attraction_id is required")
+  private Long attractionId;
+
+  public Long getAttractionId() {
+    return attractionId;
+  }
+
+  public void setAttractionId(Long attractionId) {
+    this.attractionId = attractionId;
+  }
+}
