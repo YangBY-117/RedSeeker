@@ -10,6 +10,10 @@ public class RecommendItem {
   private double score; // Matching score (0.0 - 1.0)
   private String history; // Historical background
   private String reason; // Recommendation reason
+  private String address; // Address
+  private Double averageRating; // Average rating from database
+  private Integer totalRatings; // Total number of ratings
+  private Integer heatScore; // Heat score (browse count)
 
   public RecommendItem() {
   }
@@ -22,6 +26,20 @@ public class RecommendItem {
     this.score = score;
     this.history = history;
     this.reason = reason;
+  }
+
+  public RecommendItem(String id, String name, String category, List<String> tags, double score, String history, String reason, String address, Double averageRating, Integer totalRatings, Integer heatScore) {
+    this.id = id;
+    this.name = name;
+    this.category = category;
+    this.tags = tags;
+    this.score = score;
+    this.history = history;
+    this.reason = reason;
+    this.address = address;
+    this.averageRating = averageRating;
+    this.totalRatings = totalRatings;
+    this.heatScore = heatScore;
   }
 
   public String getId() {
@@ -78,5 +96,37 @@ public class RecommendItem {
 
   public void setReason(String reason) {
     this.reason = reason;
+  }
+
+  public String getAddress() {
+    return address;
+  }
+
+  public void setAddress(String address) {
+    this.address = address;
+  }
+
+  public Double getAverageRating() {
+    return averageRating;
+  }
+
+  public void setAverageRating(Double averageRating) {
+    this.averageRating = averageRating;
+  }
+
+  public Integer getTotalRatings() {
+    return totalRatings;
+  }
+
+  public void setTotalRatings(Integer totalRatings) {
+    this.totalRatings = totalRatings;
+  }
+
+  public Integer getHeatScore() {
+    return heatScore;
+  }
+
+  public void setHeatScore(Integer heatScore) {
+    this.heatScore = heatScore;
   }
 }

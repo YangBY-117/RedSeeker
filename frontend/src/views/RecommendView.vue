@@ -107,10 +107,8 @@ const { user } = useAuth()
 const loadAttractions = async (page = 1) => {
   loading.value = true
   try {
-    console.log('🔄 开始加载景点数据:', { page, category: selectedCategory.value, sortBy: sortBy.value, hasKeyword: !!searchKeyword.value.trim() })
     let response
     if (searchKeyword.value.trim()) {
-      console.log('🔍 使用搜索功能')
       response = await searchAttractions({
         keyword: searchKeyword.value.trim(),
         category: selectedCategory.value,
@@ -119,7 +117,6 @@ const loadAttractions = async (page = 1) => {
         pageSize: pageSize.value
       })
     } else {
-      console.log('📋 使用推荐功能')
       response = await getRecommendations({
         category: selectedCategory.value,
         sortBy: sortBy.value,
@@ -129,20 +126,11 @@ const loadAttractions = async (page = 1) => {
       })
     }
     
-    console.log('📦 收到响应:', {
-      success: response?.success,
-      attractionsCount: response?.data?.attractions?.length,
-      total: response?.data?.total,
-      totalPages: response?.data?.totalPages
-    })
-    
-    if (response && response.success) {
-      attractions.value = response.data.attractions || []
-      total.value = response.data.total || 0
-      totalPages.value = response.data.totalPages || 1
-      currentPage.value = response.data.page || page
-      
-      console.log(`✅ 成功加载 ${attractions.value.length} 个景点，共 ${total.value} 个，${totalPages.value} 页`)
+    if (response.success) {
+      attractions.value = response.data.attractions
+      total.value = response.data.total
+      totalPages.value = response.data.totalPages
+      currentPage.value = response.data.page
       
       // 记录用户浏览历史（如果已登录）
       if (user.value && attractions.value.length > 0) {
@@ -150,19 +138,9 @@ const loadAttractions = async (page = 1) => {
           recordBrowse(attr.id)
         })
       }
-    } else {
-      console.warn('⚠️ 响应格式不正确:', response)
-      attractions.value = []
-      total.value = 0
-      totalPages.value = 1
     }
   } catch (error) {
-    console.error('❌ 加载失败:', error)
-    console.error('   错误详情:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    })
+    console.error('加载失败:', error)
     attractions.value = []
     total.value = 0
     totalPages.value = 1

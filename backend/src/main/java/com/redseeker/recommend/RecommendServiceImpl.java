@@ -51,6 +51,7 @@ public class RecommendServiceImpl implements RecommendService {
 
     Map<String, Double> averageRatings = loadAverageRatings();
     Map<String, Integer> browseCounts = loadBrowseCounts();
+    Map<String, Integer> totalRatingsCount = loadTotalRatingsCount();
     int maxBrowseCount =
         browseCounts.values().stream().max(Integer::compareTo).orElse(0);
 
@@ -80,6 +81,12 @@ public class RecommendServiceImpl implements RecommendService {
       }
 
       String reason = generateReason(attraction, tags, request, finalScore, cfScore);
+      
+      // Get rating and heat data from database
+      Double avgRating = averageRatings.get(attraction.getId());
+      Integer totalRatings = totalRatingsCount.getOrDefault(attraction.getId(), 0);
+      Integer heatScore = browseCounts.getOrDefault(attraction.getId(), 0);
+      
       results.add(
           new RecommendItem(
               attraction.getId(),
@@ -88,7 +95,11 @@ public class RecommendServiceImpl implements RecommendService {
               tags,
               finalScore,
               attraction.getHistory(),
-              reason));
+              reason,
+              attraction.getAddress(),
+              avgRating,
+              totalRatings,
+              heatScore));
     }
 
     return results.stream()
@@ -213,6 +224,23 @@ public class RecommendServiceImpl implements RecommendService {
       }
     } catch (SQLException ex) {
       LOGGER.warn("Failed to load browse counts", ex);
+    }
+    return result;
+  }
+
+  private Map<String, Integer> loadTotalRatingsCount() {
+    String sql = "SELECT attraction_id, COUNT(*) AS cnt FROM attraction_ratings GROUP BY attraction_id";
+    Map<String, Integer> result = new HashMap<>();
+    try (Connection connection = openConnection();
+        PreparedStatement statement = connection.prepareStatement(sql);
+        ResultSet resultSet = statement.executeQuery()) {
+      while (resultSet.next()) {
+        result.put(
+            String.valueOf(resultSet.getInt("attraction_id")),
+            resultSet.getInt("cnt"));
+      }
+    } catch (SQLException ex) {
+      LOGGER.warn("Failed to load total ratings count", ex);
     }
     return result;
   }
@@ -463,6 +491,10 @@ public class RecommendServiceImpl implements RecommendService {
 
     private int getCategoryId() {
       return categoryId;
+    }
+
+    private String getAddress() {
+      return address;
     }
 
     private String getHistory() {

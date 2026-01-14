@@ -48,7 +48,18 @@
       </div>
       <div class="spots-grid">
         <div class="spot-card" v-for="spot in hotSpots" :key="spot.id">
-          <div class="spot-image" :style="{ background: spot.color }">
+          <div class="spot-image">
+            <img
+              v-if="spot.image"
+              class="spot-image-img"
+              :src="spot.image"
+              :alt="spot.name"
+            />
+            <div
+              v-else
+              class="spot-image-fallback"
+              :style="{ background: spot.color }"
+            ></div>
             <div class="spot-type">{{ spot.type }}</div>
           </div>
           <div class="spot-content">
@@ -154,21 +165,23 @@ const features = ref([
 const hotSpots = ref([
   {
     id: 1,
-    name: '延安革命纪念馆',
-    location: '陕西延安',
-    description: '全面展示党中央在延安十三年的光辉历程',
+    name: '中共一大纪念馆',
+    location: '上海',
+    description: '中国共产党第一次全国代表大会会址，党的诞生地。',
     type: '纪念馆',
+    image: '/attraction_images/中共一大纪念馆.jpg',
     color: 'linear-gradient(135deg, #ff6b6b, #c62828)',
-    tags: ['革命历史', '教育基地', '国家级']
+    tags: ['建党历史', '红色教育']
   },
   {
     id: 2,
-    name: '井冈山革命旧址',
-    location: '江西吉安',
-    description: '中国革命的摇篮，保存完好的革命旧址群',
-    type: '革命旧址',
+    name: '上海四行仓库抗战纪念馆',
+    location: '上海',
+    description: '四行仓库保卫战旧址，铭记抗战历史的重要场所。',
+    type: '纪念馆',
+    image: '/attraction_images/上海四行仓库抗战纪念馆.jpg',
     color: 'linear-gradient(135deg, #4caf50, #2e7d32)',
-    tags: ['红色圣地', '自然风光', '5A景区']
+    tags: ['抗战历史', '城市记忆']
   },
   {
     id: 3,
@@ -176,6 +189,7 @@ const hotSpots = ref([
     location: '河北石家庄',
     description: '解放战争时期党中央所在地，新中国从这里走来',
     type: '纪念馆',
+    image: '/attraction_images/西柏坡纪念馆.jpg',
     color: 'linear-gradient(135deg, #2196f3, #0d47a1)',
     tags: ['党史教育', '会议旧址', '革命纪念地']
   },
@@ -185,6 +199,7 @@ const hotSpots = ref([
     location: '贵州遵义',
     description: '中国革命历史上的伟大转折点，具有重要历史意义',
     type: '会议会址',
+    image: '/attraction_images/遵义会议纪念馆.jpg',
     color: 'linear-gradient(135deg, #9c27b0, #6a1b9a)',
     tags: ['历史转折', '会议旧址', '文物保护']
   }
@@ -435,6 +450,19 @@ const advantages = ref([
   justify-content: center;
   font-size: 48px;
   color: white;
+  overflow: hidden;
+}
+
+.spot-image-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.spot-image-fallback {
+  width: 100%;
+  height: 100%;
 }
 
 .spot-type {
