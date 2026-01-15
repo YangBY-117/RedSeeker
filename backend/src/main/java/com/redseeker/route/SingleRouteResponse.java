@@ -1,8 +1,12 @@
 package com.redseeker.route;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class SingleRouteResponse {
   private RouteInfo route;
   private AttractionSummary attraction;
+
+  @JsonProperty("start_location")
   private RouteLocation startLocation;
 
   public RouteInfo getRoute() {

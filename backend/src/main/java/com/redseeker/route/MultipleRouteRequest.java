@@ -1,18 +1,23 @@
 package com.redseeker.route;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public class MultipleRouteRequest {
   @NotEmpty
+  @JsonProperty("attraction_ids")
   private List<Long> attractionIds;
 
   @NotNull
+  @JsonProperty("start_location")
   private RouteLocation startLocation;
 
+  @JsonProperty("end_location")
   private RouteLocation endLocation;
 
+  @JsonProperty("transport_mode")
   private String transportMode;
 
   private String strategy;

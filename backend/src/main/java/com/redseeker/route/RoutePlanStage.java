@@ -1,11 +1,16 @@
 package com.redseeker.route;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
 public class RoutePlanStage {
+  @JsonProperty("stage_name")
   private String stageName;
+
+  @JsonProperty("stage_period")
   private String stagePeriod;
+
   private List<RoutePlanStageAttraction> attractions = new ArrayList<>();
 
   public String getStageName() {

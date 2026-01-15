@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 public class PlaceServiceImpl implements PlaceService {
   private static final Logger LOGGER = LoggerFactory.getLogger(PlaceServiceImpl.class);
   private static final String DEFAULT_TRANSPORT = "walking";
+  private static final String DEFAULT_AMAP_KEY = "2039f165180b1ece6c8cfb1ae448339b";
 
   private final String amapKey;
   private final HttpClient httpClient;
@@ -144,7 +145,10 @@ public class PlaceServiceImpl implements PlaceService {
       return key;
     }
     String backendKey = System.getenv("REDSEEKER_AMAP_KEY");
-    return backendKey != null && !backendKey.isBlank() ? backendKey : null;
+    if (backendKey != null && !backendKey.isBlank()) {
+      return backendKey;
+    }
+    return DEFAULT_AMAP_KEY;
   }
 
   private static final class DistanceResult {

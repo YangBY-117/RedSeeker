@@ -1,10 +1,16 @@
 package com.redseeker.route;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class RoutePlanStageAttraction {
   private Long id;
   private String name;
   private int order;
+
+  @JsonProperty("distance_from_previous")
   private int distanceFromPrevious;
+
+  @JsonProperty("duration_from_previous")
   private int durationFromPrevious;
 
   public RoutePlanStageAttraction() {

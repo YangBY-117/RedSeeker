@@ -1,10 +1,20 @@
 package com.redseeker.diary;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class DiaryMedia {
   private Long id;
+
+  @JsonProperty("media_type")
   private String mediaType;
+
+  @JsonProperty("file_path")
   private String filePath;
+
+  @JsonProperty("thumbnail_path")
   private String thumbnailPath;
+
+  @JsonProperty("display_order")
   private Integer displayOrder;
 
   public DiaryMedia() {

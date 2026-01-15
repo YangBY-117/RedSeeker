@@ -1,13 +1,21 @@
 package com.redseeker.route;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
 public class RoutePlan {
+  @JsonProperty("total_distance")
   private int totalDistance;
+
+  @JsonProperty("total_duration")
   private int totalDuration;
+
   private List<RoutePlanStage> stages = new ArrayList<>();
+
   private List<RoutePlanSegment> segments = new ArrayList<>();
+
+  @JsonProperty("full_polyline")
   private String fullPolyline;
 
   public int getTotalDistance() {

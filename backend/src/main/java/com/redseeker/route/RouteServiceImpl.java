@@ -36,6 +36,7 @@ public class RouteServiceImpl implements RouteService {
   private static final Logger LOGGER = LoggerFactory.getLogger(RouteServiceImpl.class);
   private static final String DEFAULT_TRANSPORT = "driving";
   private static final String DEFAULT_STRATEGY = "history_first";
+  private static final String DEFAULT_AMAP_KEY = "2039f165180b1ece6c8cfb1ae448339b";
 
   private final String databaseUrl;
   private final String amapKey;
@@ -542,6 +543,9 @@ public class RouteServiceImpl implements RouteService {
       return key;
     }
     String backendKey = System.getenv("REDSEEKER_AMAP_KEY");
-    return backendKey != null && !backendKey.isBlank() ? backendKey : null;
+    if (backendKey != null && !backendKey.isBlank()) {
+      return backendKey;
+    }
+    return DEFAULT_AMAP_KEY;
   }
 }

@@ -1,14 +1,18 @@
 package com.redseeker.route;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 
 public class SingleRouteRequest {
   @NotNull
+  @JsonProperty("attraction_id")
   private Long attractionId;
 
   @NotNull
+  @JsonProperty("start_location")
   private RouteLocation startLocation;
 
+  @JsonProperty("transport_mode")
   private String transportMode;
 
   public Long getAttractionId() {

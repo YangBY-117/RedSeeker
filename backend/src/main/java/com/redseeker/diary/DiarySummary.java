@@ -1,16 +1,31 @@
 package com.redseeker.diary;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class DiarySummary {
   private Long id;
   private String title;
   private String content;
   private String destination;
+
+  @JsonProperty("travel_date")
   private String travelDate;
+
+  @JsonProperty("view_count")
   private int viewCount;
+
+  @JsonProperty("average_rating")
   private Double averageRating;
+
+  @JsonProperty("total_ratings")
   private Integer totalRatings;
+
   private DiaryAuthor author;
+
+  @JsonProperty("cover_image")
   private String coverImage;
+
+  @JsonProperty("created_at")
   private String createdAt;
 
   public Long getId() {

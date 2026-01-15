@@ -1,11 +1,16 @@
 package com.redseeker.route;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
 public class RoutePlanSegment {
+  @JsonProperty("from_attraction_id")
   private Long fromAttractionId;
+
+  @JsonProperty("to_attraction_id")
   private Long toAttractionId;
+
   private int distance;
   private int duration;
   private String polyline;

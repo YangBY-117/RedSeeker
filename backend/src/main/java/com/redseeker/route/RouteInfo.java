@@ -1,5 +1,6 @@
 package com.redseeker.route;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,6 +8,8 @@ public class RouteInfo {
   private int distance;
   private int duration;
   private List<RouteStep> steps = new ArrayList<>();
+
+  @JsonProperty("polyline")
   private String polyline;
 
   public int getDistance() {
