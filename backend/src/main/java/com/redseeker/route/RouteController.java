@@ -23,7 +23,7 @@ public class RouteController {
   }
 
   @PostMapping("/multiple")
-  public ApiResponse<MultipleRouteResponse> planMultiple(@Valid @RequestBody MultipleRouteRequest request) {
+  public ApiResponse<RoutePlanResult> planMultiple(@Valid @RequestBody MultipleRouteRequest request) {
     return ApiResponse.ok(routeService.planMultipleRoute(request));
   }
 

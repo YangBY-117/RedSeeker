@@ -1,27 +1,26 @@
 package com.redseeker.place;
 
+// ...existing code...
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 
 @Service
 public class PlaceServiceImpl implements PlaceService {
-  private static final Logger LOGGER = LoggerFactory.getLogger(PlaceServiceImpl.class);
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PlaceServiceImpl.class);
   private static final String DEFAULT_TRANSPORT = "walking";
 
   private final String amapKey;
@@ -32,6 +31,68 @@ public class PlaceServiceImpl implements PlaceService {
     this.amapKey = resolveAmapKey();
     this.httpClient = HttpClient.newHttpClient();
     this.objectMapper = new ObjectMapper();
+  }
+
+  @Override
+  public Map<String, Object> searchNearbyPlaces(PlaceAroundRequest req) {
+    Map<String, Object> result = new HashMap<>();
+    try {
+      String url = "https://restapi.amap.com/v3/place/around?" + buildQuery(Map.of(
+        "key", amapKey,
+        "location", req.getLongitude() + "," + req.getLatitude(),
+        "keywords", req.getKeywords() == null ? "" : req.getKeywords(),
+        "types", req.getTypes() == null ? "" : req.getTypes(),
+        "radius", req.getRadius() == null ? "3000" : req.getRadius().toString(),
+        "page", req.getPage() == null ? "1" : req.getPage().toString(),
+        "offset", req.getPageSize() == null ? "20" : req.getPageSize().toString(),
+        "extensions", "all"
+      ));
+      HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      if (response.statusCode() != 200) {
+        result.put("success", false);
+        result.put("message", "AMap API error: " + response.statusCode());
+        return result;
+      }
+      JsonNode root = objectMapper.readTree(response.body());
+      if (!"1".equals(root.path("status").asText())) {
+        result.put("success", false);
+        result.put("message", root.path("info").asText());
+        return result;
+      }
+      // 转换 POI 列表
+      List<Map<String, Object>> places = new ArrayList<>();
+      for (JsonNode poi : root.path("pois")) {
+        Map<String, Object> place = new HashMap<>();
+        place.put("id", poi.path("id").asText());
+        place.put("name", poi.path("name").asText());
+        place.put("address", poi.path("address").asText(""));
+        String[] loc = poi.path("location").asText().split(",");
+        if (loc.length == 2) {
+          Map<String, Object> locObj = new HashMap<>();
+          locObj.put("longitude", Double.parseDouble(loc[0]));
+          locObj.put("latitude", Double.parseDouble(loc[1]));
+          place.put("location", locObj);
+        }
+        place.put("distance", poi.path("distance").asInt(0));
+        place.put("type", poi.path("type").asText(""));
+        place.put("tel", poi.path("tel").asText(""));
+        place.put("business_area", poi.path("business_area").asText(""));
+        places.add(place);
+      }
+      result.put("success", true);
+      Map<String, Object> data = new HashMap<>();
+      data.put("places", places);
+      data.put("total", root.path("count").asInt(places.size()));
+      data.put("page", req.getPage() == null ? 1 : req.getPage());
+      data.put("pageSize", req.getPageSize() == null ? 20 : req.getPageSize());
+      data.put("totalPages", (int)Math.ceil((root.path("count").asDouble(places.size())) / (req.getPageSize() == null ? 20.0 : req.getPageSize())));
+      result.put("data", data);
+    } catch (Exception ex) {
+      result.put("success", false);
+      result.put("message", ex.getMessage());
+    }
+    return result;
   }
 
   @Override
@@ -132,10 +193,10 @@ public class PlaceServiceImpl implements PlaceService {
     return query.entrySet().stream()
         .map(
             entry ->
-                URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8)
+                java.net.URLEncoder.encode(entry.getKey(), java.nio.charset.StandardCharsets.UTF_8)
                     + "="
-                    + URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
-        .collect(Collectors.joining("&"));
+                    + java.net.URLEncoder.encode(entry.getValue(), java.nio.charset.StandardCharsets.UTF_8))
+        .collect(java.util.stream.Collectors.joining("&"));
   }
 
   private String resolveAmapKey() {
@@ -157,3 +218,4 @@ public class PlaceServiceImpl implements PlaceService {
     }
   }
 }
+

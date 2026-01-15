@@ -68,7 +68,7 @@ public class RouteServiceImpl implements RouteService {
   }
 
   @Override
-  public MultipleRouteResponse planMultipleRoute(MultipleRouteRequest request) {
+  public RoutePlanResult planMultipleRoute(MultipleRouteRequest request) {
     List<AttractionSummary> attractions = loadAttractions(request.getAttractionIds());
     if (attractions.isEmpty()) {
       throw new ServiceException(ErrorCode.NOT_FOUND, "no attractions found");
@@ -81,14 +81,36 @@ public class RouteServiceImpl implements RouteService {
 
     List<AttractionSummary> ordered =
         "shortest".equalsIgnoreCase(strategy)
-            ? sortByShortest(start, attractions, mode)
+            ? sortByShortestWithMultiPoint(start, end, attractions, mode)
             : sortByHistoryThenDistance(start, attractions, mode);
 
-    RoutePlan plan = buildRoutePlan(start, end, ordered, mode);
-    MultipleRouteResponse response = new MultipleRouteResponse();
-    response.setRoutePlan(plan);
-    response.setAttractions(ordered);
-    return response;
+    LOGGER.info("规划路线: 起点=({}, {}), 终点=({}, {}), 景点数={}", 
+        start.getLongitude(), start.getLatitude(),
+        end.getLongitude(), end.getLatitude(),
+        ordered.size());
+
+    // 使用多点路径规划
+    RouteInfo routeInfo = fetchMultiPointRoute(start, end, ordered, mode);
+    
+    RoutePlanResult result = new RoutePlanResult();
+    result.setTotal_distance(routeInfo.getDistance());
+    result.setTotal_duration(routeInfo.getDuration());
+    
+    // 将polyline解码为坐标点数组
+    List<List<Double>> path = decodePolyline(routeInfo.getPolyline());
+    
+    LOGGER.info("解码后的路径点数: {}", path.size());
+    
+    // 如果polyline为空或无效，构建基本路径（起点 -> 景点 -> 终点）
+    if (path.isEmpty()) {
+      LOGGER.info("polyline为空，构建基本路径");
+      path = buildBasicPath(start, end, ordered);
+      LOGGER.info("构建的基本路径点数: {}", path.size());
+    }
+    
+    result.setPath(path);
+    
+    return result;
   }
 
   @Override
@@ -134,6 +156,202 @@ public class RouteServiceImpl implements RouteService {
       LOGGER.warn("Failed to call AMap direction API, falling back", ex);
     }
     return buildFallbackRoute(start, destination);
+  }
+
+  /**
+   * 多点路径规划
+   */
+  private RouteInfo fetchMultiPointRoute(
+      RouteLocation start, RouteLocation end, List<AttractionSummary> attractions, String mode) {
+    if (amapKey == null || amapKey.isBlank() || attractions.isEmpty()) {
+      return buildFallbackMultiPointRoute(start, end, attractions);
+    }
+    try {
+      RouteInfo info = callAmapMultiPointDirection(start, end, attractions, mode);
+      if (info != null) {
+        return info;
+      }
+    } catch (IOException | InterruptedException ex) {
+      LOGGER.warn("Failed to call AMap multi-point direction API, falling back", ex);
+    }
+    return buildFallbackMultiPointRoute(start, end, attractions);
+  }
+
+  /**
+   * 调用高德地图多点路径规划API
+   */
+  private RouteInfo callAmapMultiPointDirection(
+      RouteLocation origin, RouteLocation destination, List<AttractionSummary> waypoints, String mode)
+      throws IOException, InterruptedException {
+    String baseUrl = switch (mode) {
+      case "walking" -> "https://restapi.amap.com/v3/direction/walking";
+      case "transit" -> "https://restapi.amap.com/v3/direction/transit/integrated";
+      default -> "https://restapi.amap.com/v3/direction/driving";
+    };
+
+    String originParam = origin.getLongitude() + "," + origin.getLatitude();
+    String destinationParam = destination.getLongitude() + "," + destination.getLatitude();
+    
+    // 构建途经点参数
+    StringBuilder waypointsParam = new StringBuilder();
+    for (int i = 0; i < waypoints.size(); i++) {
+      if (i > 0) {
+        waypointsParam.append("|");
+      }
+      waypointsParam.append(waypoints.get(i).getLongitude())
+          .append(",")
+          .append(waypoints.get(i).getLatitude());
+    }
+
+    Map<String, String> query = new LinkedHashMap<>();
+    query.put("key", amapKey);
+    query.put("origin", originParam);
+    query.put("destination", destinationParam);
+    if (!waypointsParam.isEmpty()) {
+      query.put("waypoints", waypointsParam.toString());
+    }
+    if ("driving".equals(mode)) {
+      query.put("strategy", "0"); // 速度优先
+    }
+
+    String url = baseUrl + "?" + buildQuery(query);
+    HttpRequest httpRequest = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
+    HttpResponse<String> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+    if (response.statusCode() != 200) {
+      LOGGER.warn("AMap multi-point response status {}", response.statusCode());
+      return null;
+    }
+
+    JsonNode root = objectMapper.readTree(response.body());
+    if (!"1".equals(root.path("status").asText())) {
+      LOGGER.warn("AMap multi-point direction failed: {}", root.path("info").asText());
+      return null;
+    }
+
+    if ("transit".equals(mode)) {
+      return parseTransitRoute(root);
+    }
+    return parseStandardRoute(root);
+  }
+
+  /**
+   * 构建多点路径的降级方案
+   */
+  private RouteInfo buildFallbackMultiPointRoute(
+      RouteLocation start, RouteLocation end, List<AttractionSummary> attractions) {
+    int totalDistance = 0;
+    int totalDuration = 0;
+    StringBuilder polylineBuilder = new StringBuilder();
+    
+    RouteLocation current = start;
+    for (AttractionSummary attraction : attractions) {
+      double distance = haversine(
+          current.getLatitude(), current.getLongitude(),
+          attraction.getLatitude(), attraction.getLongitude());
+      totalDistance += (int) Math.round(distance);
+      totalDuration += (int) Math.round(distance / 1.2);
+      current = toLocation(attraction);
+    }
+    
+    if (end != null && !attractions.isEmpty()) {
+      double distance = haversine(
+          current.getLatitude(), current.getLongitude(),
+          end.getLatitude(), end.getLongitude());
+      totalDistance += (int) Math.round(distance);
+      totalDuration += (int) Math.round(distance / 1.2);
+    }
+
+    RouteInfo info = new RouteInfo();
+    info.setDistance(totalDistance);
+    info.setDuration(totalDuration);
+    info.setPolyline(null);
+    return info;
+  }
+
+  /**
+   * 解码polyline为坐标点数组
+   * 高德地图的polyline格式：经度,纬度;经度,纬度;...
+   */
+  private List<List<Double>> decodePolyline(String polyline) {
+    List<List<Double>> path = new ArrayList<>();
+    if (polyline == null || polyline.isBlank()) {
+      return path;
+    }
+    
+    // 高德地图polyline格式：经度,纬度;经度,纬度;...
+    String[] points = polyline.split(";");
+    for (String point : points) {
+      if (point == null || point.isBlank()) {
+        continue;
+      }
+      String[] coords = point.split(",");
+      if (coords.length >= 2) {
+        try {
+          double lng = Double.parseDouble(coords[0].trim());
+          double lat = Double.parseDouble(coords[1].trim());
+          // 验证坐标是否有效
+          if (!Double.isNaN(lng) && !Double.isNaN(lat) && 
+              !Double.isInfinite(lng) && !Double.isInfinite(lat)) {
+            path.add(List.of(lng, lat));
+          }
+        } catch (NumberFormatException e) {
+          LOGGER.warn("Failed to parse polyline point: {}", point);
+        }
+      }
+    }
+    return path;
+  }
+
+  /**
+   * 构建基本路径（起点 -> 景点 -> 终点）
+   * 当polyline为空时使用
+   */
+  private List<List<Double>> buildBasicPath(
+      RouteLocation start, RouteLocation end, List<AttractionSummary> attractions) {
+    List<List<Double>> path = new ArrayList<>();
+    
+    // 添加起点
+    if (start != null && start.getLongitude() != null && start.getLatitude() != null) {
+      path.add(List.of(start.getLongitude(), start.getLatitude()));
+      LOGGER.debug("添加起点: ({}, {})", start.getLongitude(), start.getLatitude());
+    }
+    
+    // 添加景点
+    int validAttractions = 0;
+    for (AttractionSummary attraction : attractions) {
+      if (attraction != null && attraction.getLongitude() != null && 
+          attraction.getLatitude() != null) {
+        path.add(List.of(attraction.getLongitude(), attraction.getLatitude()));
+        validAttractions++;
+        LOGGER.debug("添加景点 {}: ({}, {})", attraction.getName(), 
+            attraction.getLongitude(), attraction.getLatitude());
+      } else {
+        LOGGER.warn("景点 {} 坐标无效: lng={}, lat={}", 
+            attraction != null ? attraction.getName() : "null",
+            attraction != null ? attraction.getLongitude() : "null",
+            attraction != null ? attraction.getLatitude() : "null");
+      }
+    }
+    LOGGER.info("有效景点数: {}/{}", validAttractions, attractions.size());
+    
+    // 添加终点（如果终点与起点不同）
+    if (end != null && end.getLongitude() != null && end.getLatitude() != null) {
+      // 检查终点是否与起点相同
+      boolean isEndSameAsStart = start != null && 
+          start.getLongitude() != null && start.getLatitude() != null &&
+          Math.abs(start.getLongitude() - end.getLongitude()) < 0.0001 &&
+          Math.abs(start.getLatitude() - end.getLatitude()) < 0.0001;
+      
+      if (!isEndSameAsStart) {
+        path.add(List.of(end.getLongitude(), end.getLatitude()));
+        LOGGER.debug("添加终点: ({}, {})", end.getLongitude(), end.getLatitude());
+      } else {
+        LOGGER.debug("终点与起点相同，跳过");
+      }
+    }
+    
+    LOGGER.info("构建的基本路径总点数: {}", path.size());
+    return path;
   }
 
   private RouteInfo callAmapDirection(RouteLocation origin, AttractionSummary destination, String mode)
@@ -386,9 +604,58 @@ public class RouteServiceImpl implements RouteService {
     return ordered;
   }
 
+  /**
+   * 最短路径策略（使用多点路径规划）
+   * 注意：高德API会自动优化途经点顺序，所以这里只需要按原始顺序传入即可
+   */
+  private List<AttractionSummary> sortByShortestWithMultiPoint(
+      RouteLocation start, RouteLocation end, List<AttractionSummary> attractions, String mode) {
+    // 对于最短路径，高德API会自动优化顺序，所以保持原始顺序即可
+    // 或者使用简单的贪心算法预排序
+    return sortByShortest(start, attractions, mode);
+  }
+
+  /**
+   * 历史优先策略：按历史事件的start_year排序
+   * 先按历史阶段（start_year）排序，同阶段内按最短路径排序
+   */
   private List<AttractionSummary> sortByHistoryThenDistance(
       RouteLocation start, List<AttractionSummary> attractions, String mode) {
-    Map<String, List<AttractionSummary>> grouped = attractions.stream()
+    // 按历史事件的start_year排序
+    List<AttractionSummary> sorted = new ArrayList<>(attractions);
+    sorted.sort((a, b) -> {
+      Integer aStart = a.getStageStart();
+      Integer bStart = b.getStageStart();
+      if (aStart == null && bStart == null) {
+        return 0;
+      }
+      if (aStart == null) {
+        return 1; // 没有历史事件的排在后面
+      }
+      if (bStart == null) {
+        return -1;
+      }
+      int yearCompare = aStart.compareTo(bStart);
+      if (yearCompare != 0) {
+        return yearCompare;
+      }
+      // 同一年份，按end_year排序
+      Integer aEnd = a.getStageEnd();
+      Integer bEnd = b.getStageEnd();
+      if (aEnd == null && bEnd == null) {
+        return 0;
+      }
+      if (aEnd == null) {
+        return 1;
+      }
+      if (bEnd == null) {
+        return -1;
+      }
+      return aEnd.compareTo(bEnd);
+    });
+
+    // 同历史阶段内的景点，按最短路径排序
+    Map<String, List<AttractionSummary>> grouped = sorted.stream()
         .collect(Collectors.groupingBy(this::stageKey, LinkedHashMap::new, Collectors.toList()));
 
     List<AttractionSummary> ordered = new ArrayList<>();
@@ -487,19 +754,17 @@ public class RouteServiceImpl implements RouteService {
       try (ResultSet rs = statement.executeQuery()) {
         while (rs.next()) {
           long id = rs.getLong("id");
-          AttractionSummary summary =
-              summaries.computeIfAbsent(
-                  id,
-                  key ->
-                      new AttractionSummary(
-                          key,
-                          rs.getString("name"),
-                          rs.getString("address"),
-                          rs.getDouble("longitude"),
-                          rs.getDouble("latitude")));
+          String name = rs.getString("name");
+          String address = rs.getString("address");
+          double longitude = rs.getDouble("longitude");
+          double latitude = rs.getDouble("latitude");
+          AttractionSummary summary = summaries.get(id);
+          if (summary == null) {
+            summary = new AttractionSummary(id, name, address, longitude, latitude);
+            summaries.put(id, summary);
+          }
           Integer start = rs.getObject("start_year", Integer.class);
-          if (start != null
-              && (summary.getStageStart() == null || start < summary.getStageStart())) {
+          if (start != null && (summary.getStageStart() == null || start < summary.getStageStart())) {
             summary.setStageStart(start);
             summary.setStageEnd(rs.getObject("end_year", Integer.class));
             summary.setStageName(rs.getString("period"));
@@ -537,11 +802,16 @@ public class RouteServiceImpl implements RouteService {
   }
 
   private String resolveAmapKey() {
+    // 优先使用环境变量
     String key = System.getenv("AMAP_KEY");
     if (key != null && !key.isBlank()) {
       return key;
     }
     String backendKey = System.getenv("REDSEEKER_AMAP_KEY");
-    return backendKey != null && !backendKey.isBlank() ? backendKey : null;
+    if (backendKey != null && !backendKey.isBlank()) {
+      return backendKey;
+    }
+    // 默认使用新的API key
+    return "2039f165180b1ece6c8cfb1ae448339b";
   }
 }

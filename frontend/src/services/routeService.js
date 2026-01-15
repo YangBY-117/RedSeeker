@@ -97,10 +97,10 @@ export async function planSingleRoute(params) {
  */
 export async function planMultipleRoute(params) {
   const response = await api.post('/route/multiple', {
-    attraction_ids: params.attraction_ids,
-    start_location: params.start_location,
-    end_location: params.end_location,
-    transport_mode: params.transport_mode || 'driving',
+    attractionIds: params.attractionIds,
+    startLocation: params.startLocation,
+    endLocation: params.endLocation,
+    transportMode: params.transportMode || 'driving',
     strategy: params.strategy || 'history_first'
   })
   return response.data.data

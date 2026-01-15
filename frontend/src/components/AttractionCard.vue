@@ -20,7 +20,7 @@
         <div class="card-score">
           <span class="score-label">推荐</span>
           <div class="score-container">
-            <span class="score-value">{{ attraction.recommend_score }}</span>
+            <span class="score-value">{{ typeof attraction.recommend_score === 'number' ? attraction.recommend_score.toFixed(0) : attraction.recommend_score }}</span>
             <div v-if="attraction.reason" class="reason-tooltip-wrapper">
               <span class="reason-icon">💡</span>
               <div class="reason-tooltip">
@@ -65,7 +65,7 @@
           </span>
         </div>
         <div class="rating-text">
-          <span class="rating-value">{{ attraction.average_rating }}</span>
+          <span class="rating-value">{{ typeof attraction.average_rating === 'number' ? attraction.average_rating.toFixed(2) : attraction.average_rating }}</span>
           <span class="rating-count">({{ attraction.total_ratings }})</span>
         </div>
       </div>

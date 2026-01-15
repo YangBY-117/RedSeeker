@@ -15,12 +15,16 @@ export function useRouteCart() {
     // 检查是否已存在
     const exists = selectedAttractions.value.find(item => item.id === attraction.id)
     if (!exists) {
+      // 支持多种坐标字段名
+      const lng = attraction.longitude ?? attraction.lng ?? attraction.lon
+      const lat = attraction.latitude ?? attraction.lat
+      
       selectedAttractions.value.push({
         id: attraction.id,
         name: attraction.name,
         address: attraction.address,
-        longitude: attraction.longitude,
-        latitude: attraction.latitude,
+        longitude: lng,
+        latitude: lat,
         category: attraction.category,
         categoryName: attraction.categoryName
       })

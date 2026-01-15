@@ -63,13 +63,15 @@
         <div v-if="selectedCount > 0" class="section-card">
           <h2 class="card-title">规划设置</h2>
           
+
           <div class="form-group">
             <label class="form-label">起点位置</label>
             <div class="input-group">
               <input
+                id="start-input"
                 v-model="startLocation.address"
                 type="text"
-                placeholder="请输入起点地址"
+                placeholder="请输入起点地址（支持自动补全）"
                 class="form-input"
               />
               <button
@@ -82,20 +84,6 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">交通方式</label>
-            <div class="transport-options">
-              <button
-                v-for="mode in transportModes"
-                :key="mode.value"
-                :class="['transport-btn', { active: transportMode === mode.value }]"
-                @click="transportMode = mode.value"
-              >
-                <span class="transport-icon">{{ mode.icon }}</span>
-                <span class="transport-text">{{ mode.label }}</span>
-              </button>
-            </div>
-          </div>
 
           <div class="form-group">
             <label class="form-label">规划策略</label>
@@ -168,10 +156,183 @@ const {
 
 // 规划设置
 const startLocation = ref({
-  longitude: 121.4737, // 默认上海坐标（测试用）
-  latitude: 31.2208,
-  address: '上海市黄浦区'
+  longitude: null, // 初始为空，等待用户输入或获取当前位置
+  latitude: null,
+  address: ''
 })
+// 已删除终点功能
+
+// 使用PlaceSearch搜索地点并在地图上标注
+function searchAndMarkLocation(keyword, locationRef, markerType = 'normal') {
+  return new Promise((resolve, reject) => {
+    if (!window.AMap) {
+      reject(new Error('高德地图API未加载'))
+      return
+    }
+    
+    window.AMap.plugin('AMap.PlaceSearch', () => {
+      if (!window.AMap.PlaceSearch) {
+        reject(new Error('PlaceSearch插件加载失败'))
+        return
+      }
+      
+      const placeSearch = new window.AMap.PlaceSearch({
+        pageSize: 1, // 只取第一个结果
+        pageIndex: 1,
+        city: '全国', // 支持全国搜索
+        citylimit: false,
+        map: null, // 不自动在地图上显示
+        panel: null, // 不使用默认面板
+        autoFitView: false,
+        type: '风景名胜|历史建筑' // 限定搜索类型，提高准确性
+      })
+      
+      placeSearch.search(keyword, (status, result) => {
+        if (status === 'complete' && result.poiList && result.poiList.pois.length > 0) {
+          const poi = result.poiList.pois[0]
+          
+          // 检查 locationRef 是否有效
+          if (!locationRef || !locationRef.value) {
+            reject(new Error('位置引用无效'))
+            return
+          }
+          
+          // 更新位置信息
+          locationRef.value.address = poi.name
+          locationRef.value.longitude = poi.location.lng
+          locationRef.value.latitude = poi.location.lat
+          
+          // 确保地图已初始化后再创建标记
+          if (map) {
+            createMarker([poi.location.lng, poi.location.lat], poi.name, markerType)
+          }
+          
+          resolve({
+            name: poi.name,
+            lng: poi.location.lng,
+            lat: poi.location.lat
+          })
+        } else if (status === 'no_data') {
+          reject(new Error(`未找到相关地点: ${keyword}`))
+        } else {
+          // status === 'error' 或其他错误
+          console.error('PlaceSearch错误详情:', { status, result, keyword })
+          reject(new Error(`搜索失败: ${status}，关键词: ${keyword}`))
+        }
+      })
+    })
+  })
+}
+
+// 创建自定义标记
+function createMarker(position, title, markerType = 'normal') {
+  if (!map) return null
+  
+  let markerContent = ''
+  let offset = new AMap.Pixel(-13, -30)
+  
+  if (markerType === 'start') {
+    // 起点标记
+    markerContent = `<div class="custom-content-marker">
+      <img src="//a.amap.com/jsapi_demos/static/demo-center/icons/dir-marker.png">
+      <div class="marker-label">起</div>
+    </div>`
+  } else if (markerType === 'end') {
+    // 终点标记（最后一个景点）
+    markerContent = `<div class="custom-content-marker">
+      <img src="//a.amap.com/jsapi_demos/static/demo-center/icons/dir-marker.png">
+      <div class="marker-label">终</div>
+    </div>`
+  } else if (typeof markerType === 'number') {
+    // 途经点标记（带编号）
+    markerContent = `<div class="custom-content-marker">
+      <img src="//a.amap.com/jsapi_demos/static/demo-center/icons/dir-marker.png">
+      <div class="marker-label">${markerType}</div>
+    </div>`
+  } else {
+    // 普通标记
+    markerContent = `<div class="custom-content-marker">
+      <img src="//a.amap.com/jsapi_demos/static/demo-center/icons/dir-marker.png">
+    </div>`
+  }
+  
+  const marker = new AMap.Marker({
+    position: position,
+    title: title,
+    content: markerContent,
+    offset: offset,
+    zIndex: 100
+  })
+  
+  marker.setMap(map)
+  markers.push(marker)
+  
+  return marker
+}
+
+// 初始化起点搜索（使用Autocomplete实现自动补全）
+function initStartLocationSearch(inputId, locationRef) {
+  if (!window.AMap) {
+    setTimeout(() => initStartLocationSearch(inputId, locationRef), 100)
+    return
+  }
+  
+  window.AMap.plugin('AMap.Autocomplete', () => {
+    if (!window.AMap.Autocomplete) {
+      console.warn('Autocomplete插件加载失败')
+      return
+    }
+    
+    const inputElement = document.getElementById(inputId)
+    if (!inputElement) {
+      console.warn(`找不到输入框: ${inputId}`)
+      return
+    }
+    
+    // 创建自动补全实例
+    const autocomplete = new window.AMap.Autocomplete({
+      input: inputId,
+      city: '全国' // 支持全国搜索
+    })
+    
+    // 监听选择事件
+    autocomplete.on('select', async function(e) {
+      if (e.poi && e.poi.location) {
+        // 直接使用POI的坐标
+        if (locationRef && locationRef.value) {
+          locationRef.value.address = e.poi.name
+          locationRef.value.longitude = e.poi.location.lng
+          locationRef.value.latitude = e.poi.location.lat
+          
+          // 创建起点标记
+          if (map) {
+            createMarker([e.poi.location.lng, e.poi.location.lat], e.poi.name, 'start')
+            map.setCenter([e.poi.location.lng, e.poi.location.lat])
+          }
+        }
+      } else if (e.poi && e.poi.name) {
+        // 如果没有location，使用PlaceSearch查询
+        try {
+          await searchAndMarkLocation(e.poi.name, locationRef, 'start')
+          if (map && locationRef.value && locationRef.value.longitude && locationRef.value.latitude) {
+            map.setCenter([locationRef.value.longitude, locationRef.value.latitude])
+          }
+        } catch (err) {
+          console.error('搜索地点失败:', err)
+        }
+      }
+    })
+  })
+}
+
+// 初始化搜索功能
+const initSearchFunctions = () => {
+  initStartLocationSearch('start-input', startLocation)
+}
+
+// 这个onMounted已合并到下面的onMounted中
+
+// 已删除终点功能
 const transportMode = ref('driving')
 const strategy = ref('history_first')
 const gettingLocation = ref(false)
@@ -179,11 +340,7 @@ const planning = ref(false)
 const routeResult = ref(null)
 
 // 交通方式选项
-const transportModes = [
-  { value: 'driving', label: '驾车', icon: '🚗' },
-  { value: 'walking', label: '步行', icon: '🚶' },
-  { value: 'transit', label: '公交', icon: '🚌' }
-]
+// 交通方式：只支持驾车
 
 // 计算属性
 const canPlan = computed(() => {
@@ -197,18 +354,14 @@ const initMap = () => {
     return
   }
 
-  // 创建地图实例
+  // 创建地图实例（使用默认中心点：北京）
   map = new AMap.Map(mapContainer.value, {
-    zoom: 13,
-    center: [startLocation.value.longitude, startLocation.value.latitude],
-    viewMode: '3D'
+    zoom: 11,
+    center: [116.397428, 39.90923], // 默认北京
+    viewMode: '2D' // 使用2D模式
   })
 
-  // 添加起点标记
-  addStartMarker()
-
-  // 绘制测试路线（硬编码）
-  drawTestRoute()
+  // 不再自动添加起点标记和测试路线
 }
 
 // 添加起点标记
@@ -219,66 +372,23 @@ const addStartMarker = () => {
     position: [startLocation.value.longitude, startLocation.value.latitude],
     title: '起点',
     icon: new AMap.Icon({
-      size: new AMap.Size(32, 32),
-      image: 'https://webapi.amap.com/theme/v1.3/markers/n/start.png',
-      imageSize: new AMap.Size(32, 32)
+      size: new AMap.Size(32, 40),
+      image: 'data:image/svg+xml;base64,' + btoa(`
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
+          <path d="M0 0 L20 0 L16 8 L20 16 L0 16 Z" fill="#c62828"/>
+          <rect x="0" y="16" width="4" height="24" fill="#8e0000"/>
+        </svg>
+      `),
+      imageSize: new AMap.Size(32, 40)
     })
   })
   marker.setMap(map)
   markers.push(marker)
 }
 
-// 绘制测试路线（硬编码）
+// 不再绘制测试路线
 const drawTestRoute = () => {
-  if (!map) return
-
-  // 测试路线坐标点（从上海到嘉兴的路线）
-  const testPath = [
-    [121.4737, 31.2208], // 起点：上海
-    [121.4800, 31.2300],
-    [121.4900, 31.2400],
-    [121.5000, 31.2500],
-    [120.7575, 30.7536]  // 终点：嘉兴南湖
-  ]
-
-  // 创建折线
-  polyline = new AMap.Polyline({
-    path: testPath,
-    isOutline: true,
-    outlineColor: '#ffeeff',
-    borderWeight: 3,
-    strokeColor: '#3366FF',
-    strokeOpacity: 1,
-    strokeWeight: 6,
-    strokeStyle: 'solid',
-    lineJoin: 'round',
-    lineCap: 'round',
-    zIndex: 50
-  })
-
-  polyline.setMap(map)
-
-  // 添加终点标记
-  const endMarker = new AMap.Marker({
-    position: testPath[testPath.length - 1],
-    title: '终点：南湖革命纪念馆',
-    icon: new AMap.Icon({
-      size: new AMap.Size(32, 32),
-      image: 'https://webapi.amap.com/theme/v1.3/markers/n/end.png',
-      imageSize: new AMap.Size(32, 32)
-    })
-  })
-  endMarker.setMap(map)
-  markers.push(endMarker)
-
-  // 设置地图视野
-  map.setFitView([polyline], false, [50, 50, 50, 50])
-
-  // 设置测试数据
-  routeResult.value = {
-    total_distance: 125000, // 125公里
-    total_duration: 7200 // 2小时
-  }
+  // 已删除测试路线功能
 }
 
 // 清除地图上的标记和路线
@@ -289,6 +399,14 @@ const clearMap = () => {
     })
     markers = []
   }
+  // 清除高德Driving绘制的路线
+  if (map && map.getAllOverlays) {
+    const polylines = map.getAllOverlays('polyline')
+    polylines.forEach(p => {
+      map.remove(p)
+    })
+  }
+  // 清除自定义polyline（如果有）
   if (polyline) {
     polyline.setMap(null)
     polyline = null
@@ -299,73 +417,149 @@ const clearMap = () => {
 const drawRoute = (path) => {
   clearMap()
 
-  if (!map || !path || path.length < 2) return
+  if (!map || !path || path.length < 2) {
+    console.warn('路径数据无效:', path)
+    return
+  }
 
-  // 绘制路线
-  polyline = new AMap.Polyline({
-    path: path,
-    isOutline: true,
-    outlineColor: '#ffeeff',
-    borderWeight: 3,
-    strokeColor: '#3366FF',
-    strokeOpacity: 1,
-    strokeWeight: 6,
-    strokeStyle: 'solid',
-    lineJoin: 'round',
-    lineCap: 'round',
-    zIndex: 50
+  // 验证并过滤无效坐标
+  const validPath = path.filter(point => {
+    if (!Array.isArray(point) || point.length < 2) {
+      return false
+    }
+    const lng = point[0]
+    const lat = point[1]
+    return typeof lng === 'number' && typeof lat === 'number' && 
+           !isNaN(lng) && !isNaN(lat) && 
+           isFinite(lng) && isFinite(lat)
   })
 
-  polyline.setMap(map)
+  if (validPath.length < 2) {
+    console.warn('有效路径点不足:', validPath)
+    return
+  }
 
-  // 添加起点标记
-  const startMarker = new AMap.Marker({
-    position: path[0],
-    title: '起点',
-    icon: new AMap.Icon({
-      size: new AMap.Size(32, 32),
-      image: 'https://webapi.amap.com/theme/v1.3/markers/n/start.png',
-      imageSize: new AMap.Size(32, 32)
-    })
-  })
-  startMarker.setMap(map)
-  markers.push(startMarker)
-
-  // 添加景点标记
-  selectedAttractions.value.forEach((attraction, index) => {
-    const marker = new AMap.Marker({
-      position: [attraction.longitude, attraction.latitude],
-      title: `${index + 1}. ${attraction.name}`,
-      icon: new AMap.Icon({
-        size: new AMap.Size(28, 28),
-        image: 'https://webapi.amap.com/theme/v1.3/markers/n/mid.png',
-        imageSize: new AMap.Size(28, 28)
-      }),
-      label: {
-        content: `${index + 1}`,
-        direction: 'right',
-        offset: new AMap.Pixel(10, 0)
+  // 使用高德地图路线规划服务绘制平滑曲线
+  // 根据文档，应该让Driving插件自动绘制路线，然后自定义样式
+  if (window.AMap) {
+    window.AMap.plugin('AMap.Driving', () => {
+      // 创建路线规划服务，让高德自动绘制路线（使用默认绿色）
+      const driving = new AMap.Driving({
+        map: map,
+        panel: null,
+        hideMarkers: true // 隐藏默认标记，使用自定义标记
+        // 不设置polylineOptions，使用高德默认的绿色路线
+      })
+    
+      // 构建路径点：起点 -> 途经点 -> 终点（最后一个景点）
+      // validPath格式：[起点, 景点1, 景点2, ..., 景点N]
+      // 应该调用：起点 -> [景点1, 景点2, ..., 景点N-1] -> 景点N（终点）
+      const waypoints = []
+      if (validPath.length > 2) {
+        // 有多个点，中间的点是途经点
+        for (let i = 1; i < validPath.length - 1; i++) {
+          waypoints.push(validPath[i])
+        }
+      }
+      
+      // 调用路线规划
+      const searchCallback = (status, result) => {
+        if (status === 'complete') {
+          // 路线规划成功，高德会自动绘制路线
+          if (result.routes && result.routes.length > 0) {
+            const route = result.routes[0]
+            
+            // 从路线结果中获取总距离和总时间
+            const totalDistance = route.distance || 0 // 单位：米
+            const totalDuration = route.time || 0 // 单位：秒
+            
+            console.log('路线规划成功:', {
+              distance: totalDistance,
+              duration: totalDuration,
+              routeCount: result.routes.length
+            })
+            
+            // 更新总距离和总时间
+            routeResult.value = {
+              total_distance: totalDistance,
+              total_duration: totalDuration
+            }
+            
+            // 设置地图视野，包含路线和标记
+            setTimeout(() => {
+              const allOverlays = []
+              // 获取Driving绘制的路线
+              if (map && map.getAllOverlays) {
+                const overlays = map.getAllOverlays('polyline')
+                allOverlays.push(...overlays)
+              }
+              if (markers.length > 0) {
+                allOverlays.push(...markers)
+              }
+              if (allOverlays.length > 0) {
+                map.setFitView(allOverlays, false, [50, 50, 50, 50])
+              }
+            }, 200)
+          } else {
+            console.warn('路线规划结果中没有路线')
+          }
+        } else {
+          console.warn('路线规划失败:', status, result)
+        }
+      }
+      
+      // 根据路径点数量选择不同的调用方式
+      if (validPath.length === 2) {
+        // 只有起点和终点（1个景点）
+        driving.search(
+          validPath[0], // 起点
+          validPath[1], // 终点（唯一的景点）
+          searchCallback
+        )
+      } else if (validPath.length > 2) {
+        // 有多个点，最后一个作为终点，中间的是途经点
+        const endPoint = validPath[validPath.length - 1]
+        if (waypoints.length > 0) {
+          driving.search(
+            validPath[0], // 起点
+            endPoint, // 终点（最后一个景点）
+            {
+              waypoints: waypoints // 途经点
+            },
+            searchCallback
+          )
+        } else {
+          // 只有起点和终点
+          driving.search(
+            validPath[0], // 起点
+            endPoint, // 终点
+            searchCallback
+          )
+        }
+      } else {
+        console.warn('路径点不足，无法规划路线')
       }
     })
-    marker.setMap(map)
-    markers.push(marker)
-  })
+  }
+  
+  // 不再使用降级方案，只使用高德自动绘制的路线
 
-  // 添加终点标记
-  const endMarker = new AMap.Marker({
-    position: path[path.length - 1],
-    title: '终点',
-    icon: new AMap.Icon({
-      size: new AMap.Size(32, 32),
-      image: 'https://webapi.amap.com/theme/v1.3/markers/n/end.png',
-      imageSize: new AMap.Size(32, 32)
-    })
-  })
-  endMarker.setMap(map)
-  markers.push(endMarker)
+  // 标记已经在planRoute中通过searchAndMarkLocation创建
+  // 这里不再重复创建，避免重复标记
 
-  // 设置地图视野
-  map.setFitView([polyline, ...markers], false, [50, 50, 50, 50])
+  // 设置地图视野（延迟执行，确保所有标记都已添加）
+  setTimeout(() => {
+    const allOverlays = []
+    if (polyline) {
+      allOverlays.push(polyline)
+    }
+    if (markers.length > 0) {
+      allOverlays.push(...markers)
+    }
+    if (allOverlays.length > 0) {
+      map.setFitView(allOverlays, false, [50, 50, 50, 50])
+    }
+  }, 200)
 }
 
 // 获取当前位置
@@ -382,9 +576,10 @@ const handleGetCurrentLocation = async () => {
     if (map) {
       map.setCenter([location.longitude, location.latitude])
       // 更新起点标记
-      clearMap()
-      addStartMarker()
-      drawTestRoute()
+      if (map) {
+        clearMap()
+        createMarker([location.longitude, location.latitude], '起点', 'start')
+      }
     }
   } catch (err) {
     console.error('获取当前位置失败:', err)
@@ -395,28 +590,128 @@ const handleGetCurrentLocation = async () => {
 }
 
 // 规划路线
+import { planMultipleRoute } from '../services/routeService'
+
 const planRoute = async () => {
   planning.value = true
   routeResult.value = null
 
   try {
-    // TODO: 调用后端API规划路线
-    // 目前先使用测试数据
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // 第一步：清除地图上的所有标记
+    clearMap()
+    
+    // 第二步：搜索并标注起点
+    if (startLocation.value.address) {
+      try {
+        await searchAndMarkLocation(startLocation.value.address, startLocation, 'start')
+      } catch (err) {
+        console.warn('起点搜索失败，使用已有坐标:', err)
+        if (startLocation.value.longitude && startLocation.value.latitude) {
+          createMarker(
+            [startLocation.value.longitude, startLocation.value.latitude],
+            '起点',
+            'start'
+          )
+        }
+      }
+    }
+    
+    // 第三步：标注所有景点（使用景点已有的坐标，不搜索）
+    // 因为景点坐标已经在数据库中，直接使用坐标创建标记
+    if (map && selectedAttractions.value && selectedAttractions.value.length > 0) {
+      selectedAttractions.value.forEach((attraction, index) => {
+        if (attraction && (attraction.longitude || attraction.lng) && (attraction.latitude || attraction.lat)) {
+          const lng = attraction.longitude ?? attraction.lng
+          const lat = attraction.latitude ?? attraction.lat
+          
+          // 景点标记：显示编号（1, 2, 3...），最后一个景点显示"终"
+          const markerType = (index === selectedAttractions.value.length - 1) ? 'end' : (index + 1)
+          createMarker([lng, lat], attraction.name || `景点${index + 1}`, markerType)
+        } else {
+          console.warn(`景点 ${attraction?.name || '未知'} 没有坐标信息`)
+        }
+      })
+    }
+    
+    // 第五步：构建后端参数
+    const params = {
+      attractionIds: selectedAttractions.value.map(attr => Number(attr.id)),
+      startLocation: {
+        longitude: startLocation.value.longitude,
+        latitude: startLocation.value.latitude,
+        address: startLocation.value.address || ''
+      },
+      // 不设置终点，后端会自动将最后一个景点作为终点
+      endLocation: null,
+      transportMode: transportMode.value,
+      strategy: strategy.value
+    }
+    
+    // 第六步：调用后端多景点路线规划接口
+    const result = await planMultipleRoute(params)
 
-    // 构建路线路径（测试用）
-    const path = [
-      [startLocation.value.longitude, startLocation.value.latitude],
-      ...selectedAttractions.value.map(attr => [attr.longitude, attr.latitude])
-    ]
+    console.log('路线规划结果:', result)
+    console.log('路径数据详情:', JSON.stringify(result.path))
+    console.log('路径数组长度:', result.path?.length)
 
-    // 绘制路线
-    drawRoute(path)
-
-    // 设置测试结果
-    routeResult.value = {
-      total_distance: 125000,
-      total_duration: 7200
+    // 路径点格式：[[lng, lat], ...]
+    if (result && result.path && Array.isArray(result.path)) {
+      // 验证并转换路径数据（确保坐标是数字类型）
+      const validPath = result.path
+        .map((point, index) => {
+          if (!Array.isArray(point) || point.length < 2) {
+            console.warn(`路径点 ${index} 格式无效:`, point)
+            return null
+          }
+          // 转换为数字类型（支持字符串和数字）
+          let lng = point[0]
+          let lat = point[1]
+          
+          if (typeof lng === 'string') {
+            lng = parseFloat(lng)
+          }
+          if (typeof lat === 'string') {
+            lat = parseFloat(lat)
+          }
+          
+          // 验证坐标有效性
+          if (typeof lng === 'number' && typeof lat === 'number' && 
+              !isNaN(lng) && !isNaN(lat) && 
+              isFinite(lng) && isFinite(lat) &&
+              lng >= -180 && lng <= 180 &&
+              lat >= -90 && lat <= 90) {
+            return [lng, lat]
+          }
+          console.warn(`路径点 ${index} 坐标无效:`, [lng, lat])
+          return null
+        })
+        .filter(point => point !== null)
+      
+      console.log('验证后的路径:', validPath)
+      console.log('有效路径点数量:', validPath.length)
+      
+      if (validPath.length < 2) {
+        console.error('有效坐标点不足，原始路径:', result.path)
+        console.error('选中的景点数量:', selectedAttractions.value.length)
+        throw new Error(`后端返回的路径数据无效，有效坐标点不足（${validPath.length}个有效点，需要至少2个）。请确保已选择景点且景点坐标有效。`)
+      }
+      
+      drawRoute(validPath)
+      
+      // 使用后端返回的总距离和总时间
+      routeResult.value = {
+        total_distance: result.total_distance || 0,
+        total_duration: result.total_duration || 0
+      }
+      
+      console.log('路线规划完成:', {
+        pathPoints: validPath.length,
+        totalDistance: routeResult.value.total_distance,
+        totalDuration: routeResult.value.total_duration
+      })
+    } else {
+      console.error('后端返回数据格式错误:', result)
+      throw new Error('后端未返回有效路径')
     }
   } catch (err) {
     console.error('路线规划失败:', err)
@@ -461,12 +756,20 @@ onMounted(() => {
   // 等待高德地图API加载完成
   if (window.AMap) {
     initMap()
+    // 地图初始化后再初始化搜索功能
+    setTimeout(() => {
+      initSearchFunctions()
+    }, 500)
   } else {
     // 如果API还未加载，等待加载完成
     const checkAMap = setInterval(() => {
       if (window.AMap) {
         clearInterval(checkAMap)
         initMap()
+        // 地图初始化后再初始化搜索功能
+        setTimeout(() => {
+          initSearchFunctions()
+        }, 500)
       }
     }, 100)
     
@@ -871,6 +1174,29 @@ onUnmounted(() => {
   font-size: var(--font-size-lg);
   font-weight: 600;
   color: var(--color-primary);
+}
+
+/* 自定义标记样式 */
+.custom-content-marker {
+  position: relative;
+  width: 25px;
+  height: 34px;
+}
+
+.custom-content-marker img {
+  width: 100%;
+  height: 100%;
+}
+
+.custom-content-marker .marker-label {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* 响应式设计 */

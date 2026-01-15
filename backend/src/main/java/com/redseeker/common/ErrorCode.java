@@ -6,6 +6,7 @@ public enum ErrorCode {
   VALIDATION_ERROR("VALIDATION_ERROR", HttpStatus.BAD_REQUEST, "Validation failed"),
   NOT_FOUND("NOT_FOUND", HttpStatus.NOT_FOUND, "Resource not found"),
   UNAUTHORIZED("UNAUTHORIZED", HttpStatus.UNAUTHORIZED, "Unauthorized"),
+  FORBIDDEN("FORBIDDEN", HttpStatus.FORBIDDEN, "Forbidden"),
   INTERNAL_ERROR("INTERNAL_ERROR", HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
 
   private final String code;

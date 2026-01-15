@@ -1,15 +1,13 @@
-import { api } from './api'
 
-// 高德地图API Key
-const AMAP_KEY = 'bfa236c5b4ff2d954936faa864c1a490'
-const AMAP_BASE_URL = 'https://restapi.amap.com/v3'
+import { api } from './api'
 
 /**
  * 场所查询服务
  */
 
 /**
- * 高德地图周边搜索（前端直接调用）
+/**
+ * 场所周边搜索（由后端代理高德API）
  * @param {Object} params - 搜索参数
  * @param {number} params.longitude - 经度
  * @param {number} params.latitude - 纬度
@@ -21,65 +19,9 @@ const AMAP_BASE_URL = 'https://restapi.amap.com/v3'
  * @returns {Promise<Object>} 搜索结果
  */
 export async function searchNearbyPlaces(params) {
-  const {
-    longitude,
-    latitude,
-    keywords = '',
-    types = '',
-    radius = 3000,
-    page = 1,
-    pageSize = 20
-  } = params
-
-  const url = `${AMAP_BASE_URL}/place/around`
-  const queryParams = new URLSearchParams({
-    key: AMAP_KEY,
-    location: `${longitude},${latitude}`,
-    keywords: keywords,
-    types: types,
-    radius: radius.toString(),
-    page: page.toString(),
-    offset: pageSize.toString(),
-    extensions: 'all'
-  })
-
-  try {
-    const response = await fetch(`${url}?${queryParams}`)
-    const data = await response.json()
-
-    if (data.status === '1' && data.pois) {
-      // 转换数据格式
-      const places = data.pois.map(poi => ({
-        id: poi.id,
-        name: poi.name,
-        address: poi.address || '',
-        location: {
-          longitude: parseFloat(poi.location.split(',')[0]),
-          latitude: parseFloat(poi.location.split(',')[1])
-        },
-        distance: parseInt(poi.distance) || 0, // 直线距离（米）
-        type: poi.type || '',
-        tel: poi.tel || '',
-        business_area: poi.business_area || ''
-      }))
-
-      return {
-        success: true,
-        data: {
-          places: places,
-          total: parseInt(data.count) || places.length,
-          page: page,
-          pageSize: pageSize,
-          totalPages: Math.ceil((parseInt(data.count) || places.length) / pageSize)
-        }
-      }
-    } else {
-      throw new Error(data.info || '搜索失败')
-    }
-  } catch (error) {
-    console.error('周边搜索失败:', error)
-    throw error
-  }
+  // 直接请求后端自定义接口
+  const response = await api.post('/place/around', params)
+  return response.data
 }
 
 /**

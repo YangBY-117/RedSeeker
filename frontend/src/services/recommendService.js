@@ -1,4 +1,8 @@
+
 import { api } from './api'
+import images from '../data/images.js'
+import attrNameData from '../data/attr_name.json'
+
 
 /**
  * 推荐服务
@@ -129,41 +133,73 @@ export async function getRecommendations(params = {}) {
     }
 
     // 处理图片路径和数据格式转换
+    // 构建id到评分/热度的映射
+    const idToAttrName = {}
+    if (Array.isArray(attrNameData)) {
+      attrNameData.forEach(item => {
+        idToAttrName[String(item.id)] = item
+      })
+    }
+
     const processedAttractions = paginatedAttractions.map(attr => {
       // 根据后端返回的category获取数据库的类别名
       const categoryName = getCategoryNameFromBackendCategory(attr.category)
-      
       // 将 score (0.0-1.0) 转换为 recommend_score (0-100)
       const recommendScore = attr.score ? Math.round(attr.score * 100) : 0
-      
+
+      // 用户评价分归一化到0-5区间
+      const normalizedScore = attr.score ? (attr.score * 5) : (dbItem['评分'] || 0)
+
+      // 图片优先级：后端字段 > images.js > getAttractionImageUrl
+      let imageUrl = ''
+      if (attr.image_url) {
+        imageUrl = attr.image_url
+      } else if (images && images[attr.id] && images[attr.id][0]) {
+        imageUrl = images[attr.id][0]
+      } else if (typeof getAttractionImageUrl === 'function') {
+        imageUrl = getAttractionImageUrl(attr.name)
+      } else {
+        imageUrl = ''
+      }
+
+      const idStr = String(attr.id)
+      const dbItem = idToAttrName[idStr] || {}
       return {
         ...attr,
         // 基本信息
-        id: String(attr.id), // 确保 id 是字符串
+        id: idStr,
         name: attr.name || '',
+        // 坐标信息（确保包含longitude和latitude）
+        longitude: attr.longitude ?? attr.lng ?? attr.lon,
+        latitude: attr.latitude ?? attr.lat,
         // 类别（中文，使用数据库的类别映射）
         categoryName: categoryName,
         category: categoryName, // 兼容性
         // 图片路径
-        image_url: attr.image_url || getAttractionImageUrl(attr.name),
+        image_url: imageUrl,
         // 简介和历史
         brief_intro: attr.history || attr.brief_intro || attr.reason || '',
         history: attr.history || '',
         reason: attr.reason || '',
         // 推荐分数
         recommend_score: recommendScore,
-        score: attr.score || 0,
+        score: normalizedScore,
         // 标签
         tags: attr.tags || [],
         // 使用后端返回的真实数据
         address: attr.address || '',
         business_hours: attr.business_hours || '全天开放',
         per_capita_consumption: attr.per_capita_consumption || 0,
-        // 优先使用后端返回的评分和热度数据，如果没有则使用默认值
-        // 注意：后端返回的averageRating和heatScore是从其他表计算的，不是数据库attractions表的score和popularity字段
-        average_rating: attr.averageRating !== null && attr.averageRating !== undefined ? attr.averageRating : (attr.average_rating || null),
+        // 评分和热度优先级：后端 > db > 0
+        average_rating:
+          attr.averageRating !== null && attr.averageRating !== undefined
+            ? (attr.averageRating * 5)
+            : (dbItem['评分'] || (attr.score ? attr.score * 5 : attr.average_rating) || null),
         total_ratings: attr.totalRatings !== null && attr.totalRatings !== undefined ? attr.totalRatings : (attr.total_ratings || 0),
-        heat_score: attr.heatScore !== null && attr.heatScore !== undefined ? attr.heatScore : (attr.heat_score || null)
+        heat_score:
+          attr.heatScore !== null && attr.heatScore !== undefined
+            ? attr.heatScore
+            : (dbItem['热度'] || attr.heat_score || null)
       }
     })
 

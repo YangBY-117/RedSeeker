@@ -4,7 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RedSeeker 个性化旅游系统</title>
-    <!-- 高德地图JS API -->
+    <!-- 高德地图JS API - 配置安全密钥 -->
+    <script type="text/javascript">
+      window._AMapSecurityConfig = {
+        securityJsCode: '332666a7065f99857bf73e6e0fbf2351'
+      };
+    </script>
     <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=bfa236c5b4ff2d954936faa864c1a490" onerror="console.warn('高德地图API加载失败，地图功能可能不可用')"></script>
   </head>
   <body>
