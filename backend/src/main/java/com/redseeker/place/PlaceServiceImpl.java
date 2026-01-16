@@ -23,6 +23,8 @@ public class PlaceServiceImpl implements PlaceService {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(PlaceServiceImpl.class);
   private static final String DEFAULT_TRANSPORT = "walking";
 
+  private static final String AMAP_KEY = "2039f165180b1ece6c8cfb1ae448339b"; // 后端高德API Key
+  
   private final String amapKey;
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
@@ -55,14 +57,30 @@ public class PlaceServiceImpl implements PlaceService {
         return result;
       }
       JsonNode root = objectMapper.readTree(response.body());
-      if (!"1".equals(root.path("status").asText())) {
+      String status = root.path("status").asText();
+      if (!"1".equals(status)) {
+        String info = root.path("info").asText();
+        LOGGER.warn("高德API返回错误: status={}, info={}", status, info);
         result.put("success", false);
-        result.put("message", root.path("info").asText());
+        result.put("message", info.isEmpty() ? "高德API调用失败" : info);
         return result;
       }
       // 转换 POI 列表
       List<Map<String, Object>> places = new ArrayList<>();
-      for (JsonNode poi : root.path("pois")) {
+      JsonNode poisNode = root.path("pois");
+      if (!poisNode.isArray()) {
+        LOGGER.warn("高德API返回的pois不是数组");
+        result.put("success", true);
+        Map<String, Object> data = new HashMap<>();
+        data.put("places", places);
+        data.put("total", 0);
+        data.put("page", req.getPage() == null ? 1 : req.getPage());
+        data.put("pageSize", req.getPageSize() == null ? 20 : req.getPageSize());
+        data.put("totalPages", 0);
+        result.put("data", data);
+        return result;
+      }
+      for (JsonNode poi : poisNode) {
         Map<String, Object> place = new HashMap<>();
         place.put("id", poi.path("id").asText());
         place.put("name", poi.path("name").asText());
@@ -89,8 +107,9 @@ public class PlaceServiceImpl implements PlaceService {
       data.put("totalPages", (int)Math.ceil((root.path("count").asDouble(places.size())) / (req.getPageSize() == null ? 20.0 : req.getPageSize())));
       result.put("data", data);
     } catch (Exception ex) {
+      LOGGER.error("搜索周边场所失败", ex);
       result.put("success", false);
-      result.put("message", ex.getMessage());
+      result.put("message", "搜索失败: " + ex.getMessage());
     }
     return result;
   }
@@ -200,12 +219,17 @@ public class PlaceServiceImpl implements PlaceService {
   }
 
   private String resolveAmapKey() {
+    // 优先使用环境变量，如果没有则使用硬编码的key
     String key = System.getenv("AMAP_KEY");
     if (key != null && !key.isBlank()) {
       return key;
     }
     String backendKey = System.getenv("REDSEEKER_AMAP_KEY");
-    return backendKey != null && !backendKey.isBlank() ? backendKey : null;
+    if (backendKey != null && !backendKey.isBlank()) {
+      return backendKey;
+    }
+    // 使用硬编码的key（与路线规划模块一致）
+    return AMAP_KEY;
   }
 
   private static final class DistanceResult {

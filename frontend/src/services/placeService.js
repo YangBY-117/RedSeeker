@@ -1,11 +1,9 @@
-
 import { api } from './api'
 
 /**
  * 场所查询服务
  */
 
-/**
 /**
  * 场所周边搜索（由后端代理高德API）
  * @param {Object} params - 搜索参数
@@ -19,9 +17,28 @@ import { api } from './api'
  * @returns {Promise<Object>} 搜索结果
  */
 export async function searchNearbyPlaces(params) {
-  // 直接请求后端自定义接口
-  const response = await api.post('/place/around', params)
-  return response.data
+  try {
+    // 直接请求后端自定义接口
+    const response = await api.post('/place/around', params)
+    
+    // 检查响应格式
+    if (response.data && response.data.success !== undefined) {
+      // 后端返回格式: { success: true, data: {...} }
+      return response.data
+    } else if (response.data && response.data.data) {
+      // 如果已经是 ApiResponse 格式
+      return response.data
+    } else {
+      // 兼容其他格式
+      return {
+        success: true,
+        data: response.data
+      }
+    }
+  } catch (error) {
+    console.error('搜索周边场所失败:', error)
+    throw error
+  }
 }
 
 /**
@@ -34,15 +51,31 @@ export async function searchNearbyPlaces(params) {
  * @returns {Promise<Array>} 排序后的场所列表（包含实际距离）
  */
 export async function getRealDistanceAndSort(params) {
-  const response = await api.post('/place/distance-sort', {
-    origin: {
-      longitude: params.longitude,
-      latitude: params.latitude
-    },
-    places: params.places,
-    transport_mode: params.transport_mode || 'walking'
-  })
-  return response.data.data
+  try {
+    const response = await api.post('/place/distance-sort', {
+      origin: {
+        longitude: params.longitude,
+        latitude: params.latitude
+      },
+      places: params.places,
+      transport_mode: params.transport_mode || 'walking'
+    })
+    
+    // 检查响应格式
+    if (response.data && response.data.data) {
+      // ApiResponse 格式: { success: true, data: [...] }
+      return response.data.data
+    } else if (Array.isArray(response.data)) {
+      // 直接返回数组
+      return response.data
+    } else {
+      console.warn('意外的响应格式:', response.data)
+      return []
+    }
+  } catch (error) {
+    console.error('获取实际距离失败:', error)
+    throw error
+  }
 }
 
 /**

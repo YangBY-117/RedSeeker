@@ -280,8 +280,17 @@ const showPlacesOnMap = () => {
 
   // 添加场所标记
   places.value.forEach((place, index) => {
+    // 处理不同的location格式
+    const lng = place.location?.longitude || place.location?.lng
+    const lat = place.location?.latitude || place.location?.lat
+    
+    if (!lng || !lat) {
+      console.warn(`场所 ${place.name} 坐标无效:`, place.location)
+      return
+    }
+
     const marker = new AMap.Marker({
-      position: [place.location.longitude, place.location.latitude],
+      position: [lng, lat],
       title: `${index + 1}. ${place.name}`,
       icon: new AMap.Icon({
         size: new AMap.Size(28, 28),
@@ -391,15 +400,23 @@ const handleSearch = async () => {
       pageSize: 50
     })
 
-    places.value = result.data.places || []
+    // 检查返回结果
+    if (!result.success) {
+      throw new Error(result.message || '搜索失败')
+    }
+
+    places.value = result.data?.places || []
     selectedPlaceIndex.value = -1
 
     // 在地图上显示
-    showPlacesOnMap()
-
-    // 按直线距离排序
-    sortBy.value = 'straight'
-    places.value.sort((a, b) => a.distance - b.distance)
+    if (places.value.length > 0) {
+      showPlacesOnMap()
+      // 按直线距离排序
+      sortBy.value = 'straight'
+      places.value.sort((a, b) => (a.distance || 0) - (b.distance || 0))
+    } else {
+      console.log('未找到相关场所')
+    }
   } catch (error) {
     console.error('搜索失败:', error)
     alert('搜索失败：' + error.message)
@@ -417,18 +434,37 @@ const handleRealDistanceSort = async () => {
   sortBy.value = 'real'
 
   try {
+    // 转换places格式为后端需要的格式
+    const placesForApi = places.value.map(place => ({
+      id: place.id,
+      name: place.name,
+      address: place.address || '',
+      location: {
+        longitude: place.location?.longitude || place.location?.lng,
+        latitude: place.location?.latitude || place.location?.lat
+      },
+      distance: place.distance || 0,
+      type: place.type || '',
+      tel: place.tel || ''
+    }))
+
     const sortedPlaces = await getRealDistanceAndSort({
       longitude: selectedLocation.value.longitude,
       latitude: selectedLocation.value.latitude,
-      places: places.value,
+      places: placesForApi,
       transport_mode: 'walking'
     })
 
-    places.value = sortedPlaces
-    showPlacesOnMap()
+    if (Array.isArray(sortedPlaces) && sortedPlaces.length > 0) {
+      places.value = sortedPlaces
+      showPlacesOnMap()
+    } else {
+      console.warn('实际距离排序返回空结果，保持原排序')
+      sortBy.value = 'straight'
+    }
   } catch (error) {
     console.error('计算实际距离失败:', error)
-    alert('计算实际距离失败，请稍后重试')
+    alert('计算实际距离失败：' + (error.message || '请稍后重试'))
     sortBy.value = 'straight'
   } finally {
     sortingRealDistance.value = false
@@ -440,8 +476,13 @@ const selectPlace = (index) => {
   selectedPlaceIndex.value = index
   const place = places.value[index]
   if (map && place) {
-    map.setCenter([place.location.longitude, place.location.latitude])
-    map.setZoom(16)
+    // 处理不同的location格式
+    const lng = place.location?.longitude || place.location?.lng
+    const lat = place.location?.latitude || place.location?.lat
+    if (lng && lat) {
+      map.setCenter([lng, lat])
+      map.setZoom(16)
+    }
   }
 }
 
