@@ -1,5 +1,6 @@
 package com.redseeker.diary;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,15 +9,30 @@ public class DiaryDetailResponse {
   private String title;
   private String content;
   private String destination;
+
+  @JsonProperty("travel_date")
   private String travelDate;
+
+  @JsonProperty("view_count")
   private int viewCount;
+
+  @JsonProperty("average_rating")
   private Double averageRating;
+
+  @JsonProperty("total_ratings")
   private Integer totalRatings;
+
   private DiaryAuthor author;
   private List<DiaryMedia> media = new ArrayList<>();
   private List<DiaryAttraction> attractions = new ArrayList<>();
+
+  @JsonProperty("user_rating")
   private Integer userRating;
+
+  @JsonProperty("created_at")
   private String createdAt;
+
+  @JsonProperty("updated_at")
   private String updatedAt;
 
   public Long getId() {

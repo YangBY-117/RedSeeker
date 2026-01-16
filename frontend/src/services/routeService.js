@@ -1,31 +1,31 @@
 import { api } from './api'
 
 /**
- * è·¯çº¿è§„åˆ’æœåŠ¡
+ * Â·Ïß¹æ»®·şÎñ
  */
 
 /**
- * è·å–å½“å‰ä½ç½®
- * @returns {Promise<Object>} å½“å‰ä½ç½®ä¿¡æ¯ {longitude, latitude, address}
+ * »ñÈ¡µ±Ç°Î»ÖÃ
+ * @returns {Promise<Object>} µ±Ç°Î»ÖÃĞÅÏ¢ {longitude, latitude, address}
  */
 export async function getCurrentLocation() {
   try {
     const response = await api.get('/route/current-location')
     return response.data.data
   } catch (error) {
-    // å¦‚æœåç«¯æ¥å£æœªå®ç°ï¼Œä½¿ç”¨æµè§ˆå™¨å®šä½API
+    // Èç¹ûºó¶Ë½Ó¿ÚÎ´ÊµÏÖ£¬Ê¹ÓÃä¯ÀÀÆ÷¶¨Î»API
     return getBrowserLocation()
   }
 }
 
 /**
- * ä½¿ç”¨æµè§ˆå™¨å®šä½APIè·å–å½“å‰ä½ç½®
- * @returns {Promise<Object>} å½“å‰ä½ç½®ä¿¡æ¯
+ * Ê¹ÓÃä¯ÀÀÆ÷¶¨Î»API»ñÈ¡µ±Ç°Î»ÖÃ
+ * @returns {Promise<Object>} µ±Ç°Î»ÖÃĞÅÏ¢
  */
 function getBrowserLocation() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
-      reject(new Error('æµè§ˆå™¨ä¸æ”¯æŒå®šä½åŠŸèƒ½'))
+      reject(new Error('ä¯ÀÀÆ÷²»Ö§³Ö¶¨Î»¹¦ÄÜ'))
       return
     }
 
@@ -35,18 +35,18 @@ function getBrowserLocation() {
           longitude: position.coords.longitude,
           latitude: position.coords.latitude
         }
-        
-        // å°è¯•é€šè¿‡é€†åœ°ç†ç¼–ç è·å–åœ°å€ï¼ˆå¯é€‰ï¼‰
+
+        // ³¢ÊÔÍ¨¹ıÄæµØÀí±àÂë»ñÈ¡µØÖ·£¨¿ÉÑ¡£©
         const address = await reverseGeocode(longitude, latitude).catch(() => null)
-        
+
         resolve({
           longitude,
           latitude,
-          address: address || `ç»åº¦: ${longitude}, çº¬åº¦: ${latitude}`
+          address: address || `¾­¶È: ${longitude}, Î³¶È: ${latitude}`
         })
       },
       (error) => {
-        reject(new Error('è·å–ä½ç½®å¤±è´¥ï¼š' + error.message))
+        reject(new Error('»ñÈ¡Î»ÖÃÊ§°Ü: ' + error.message))
       },
       {
         enableHighAccuracy: true,
@@ -58,49 +58,49 @@ function getBrowserLocation() {
 }
 
 /**
- * é€†åœ°ç†ç¼–ç ï¼ˆé€šè¿‡åæ ‡è·å–åœ°å€ï¼‰
- * æ³¨æ„ï¼šè¿™é‡Œå¯ä»¥è°ƒç”¨é«˜å¾·åœ°å›¾APIï¼Œä½†éœ€è¦å‰ç«¯é…ç½®API Key
- * ç›®å‰å…ˆè¿”å›nullï¼Œç”±åç«¯å¤„ç†
+ * ÄæµØÀí±àÂë£¨Í¨¹ı×ø±ê»ñÈ¡µØÖ·£©
+ * ×¢Òâ£ºÕâÀï¿ÉÒÔµ÷ÓÃ¸ßµÂµØÍ¼API£¬µ«ĞèÒªÇ°¶ËÅäÖÃAPI Key
+ * Ä¿Ç°ÏÈ·µ»Ønull£¬ÓÉºó¶Ë´¦Àí
  */
 async function reverseGeocode(longitude, latitude) {
-  // TODO: å¦‚æœéœ€è¦å‰ç«¯ç›´æ¥è°ƒç”¨é«˜å¾·åœ°å›¾APIï¼Œå¯ä»¥åœ¨è¿™é‡Œå®ç°
-  // ç›®å‰å…ˆè¿”å›nullï¼Œåœ°å€ç”±åç«¯é€šè¿‡APIè·å–
+  // TODO: Èç¹ûĞèÒªÇ°¶ËÖ±½Óµ÷ÓÃ¸ßµÂµØÍ¼API£¬¿ÉÒÔÔÚÕâÀïÊµÏÖ
+  // Ä¿Ç°ÏÈ·µ»Ønull£¬µØÖ·ÓÉºó¶ËÍ¨¹ıAPI»ñÈ¡
   return null
 }
 
 /**
- * è§„åˆ’å•æ™¯ç‚¹è·¯çº¿
- * @param {Object} params - è·¯çº¿è§„åˆ’å‚æ•°
- * @param {number} params.attraction_id - æ™¯ç‚¹ID
- * @param {Object} params.start_location - èµ·å§‹ä½ç½® {longitude, latitude, address?}
- * @param {string} params.transport_mode - äº¤é€šæ–¹å¼: 'driving' | 'walking' | 'transit'
- * @returns {Promise<Object>} è·¯çº¿è§„åˆ’ç»“æœ
+ * ¹æ»®µ¥¾°µãÂ·Ïß
+ * @param {Object} params - Â·Ïß¹æ»®²ÎÊı
+ * @param {number} params.attraction_id - ¾°µãID
+ * @param {Object} params.start_location - ÆğÊ¼Î»ÖÃ {longitude, latitude, address?}
+ * @param {string} params.transport_mode - ½»Í¨·½Ê½ 'driving' | 'walking' | 'transit'
+ * @returns {Promise<Object>} Â·Ïß¹æ»®½á¹û
  */
 export async function planSingleRoute(params) {
   const response = await api.post('/route/single', {
-    attraction_id: params.attraction_id,
-    start_location: params.start_location,
-    transport_mode: params.transport_mode || 'driving'
+    attractionId: params.attraction_id,
+    startLocation: params.start_location,
+    transportMode: params.transport_mode || 'driving'
   })
   return response.data.data
 }
 
 /**
- * è§„åˆ’å¤šæ™¯ç‚¹è·¯çº¿
- * @param {Object} params - è·¯çº¿è§„åˆ’å‚æ•°
- * @param {Array<number>} params.attraction_ids - æ™¯ç‚¹IDæ•°ç»„
- * @param {Object} params.start_location - èµ·å§‹ä½ç½® {longitude, latitude, address?}
- * @param {Object} params.end_location - ç»“æŸä½ç½®ï¼ˆå¯é€‰ï¼‰{longitude, latitude, address?}
- * @param {string} params.transport_mode - äº¤é€šæ–¹å¼: 'driving' | 'walking' | 'transit'
- * @param {string} params.strategy - æ’åºç­–ç•¥: 'history_first' | 'shortest'
- * @returns {Promise<Object>} è·¯çº¿è§„åˆ’ç»“æœ
+ * ¹æ»®¶à¾°µãÂ·Ïß
+ * @param {Object} params - Â·Ïß¹æ»®²ÎÊı
+ * @param {Array<number>} params.attraction_ids - ¾°µãIDÊı×é
+ * @param {Object} params.start_location - ÆğÊ¼Î»ÖÃ {longitude, latitude, address?}
+ * @param {Object} params.end_location - ½áÊøÎ»ÖÃ£¨¿ÉÑ¡£©{longitude, latitude, address?}
+ * @param {string} params.transport_mode - ½»Í¨·½Ê½ 'driving' | 'walking' | 'transit'
+ * @param {string} params.strategy - ÅÅĞò²ßÂÔ: 'history_first' | 'shortest'
+ * @returns {Promise<Object>} Â·Ïß¹æ»®½á¹û
  */
 export async function planMultipleRoute(params) {
   const response = await api.post('/route/multiple', {
-    attraction_ids: params.attraction_ids,
-    start_location: params.start_location,
-    end_location: params.end_location,
-    transport_mode: params.transport_mode || 'driving',
+    attractionIds: params.attraction_ids,
+    startLocation: params.start_location,
+    endLocation: params.end_location,
+    transportMode: params.transport_mode || 'driving',
     strategy: params.strategy || 'history_first'
   })
   return response.data.data

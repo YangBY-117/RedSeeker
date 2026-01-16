@@ -1,13 +1,11 @@
 <template>
   <div class="route-view">
-    <!-- 页面标题 -->
     <div class="page-header">
       <h1 class="page-title">路线规划</h1>
-      <p class="page-subtitle">从推荐中选择景点，规划您的红色旅游路线</p>
+      <p class="page-subtitle">从推荐中选择景点，规划您的红色旅游路线。</p>
     </div>
 
     <div class="route-content">
-      <!-- 左侧：已选景点列表 -->
       <div class="selected-section">
         <div class="section-card">
           <div class="card-header">
@@ -17,7 +15,7 @@
 
           <div v-if="selectedCount === 0" class="empty-state">
             <p class="empty-text">暂无景点</p>
-            <p class="empty-hint">前往推荐页面选择景点加入路线</p>
+            <p class="empty-hint">前往推荐页面选择景点加入路线。</p>
           </div>
 
           <div v-else class="attraction-list">
@@ -37,7 +35,7 @@
                 @click="removeAttraction(attraction.id)"
                 title="移除"
               >
-                ×
+                ??
               </button>
             </div>
           </div>
@@ -48,7 +46,7 @@
               :disabled="!canPlan || planning"
               @click="planRoute"
             >
-              {{ planning ? '规划中...' : '开始规划路线' }}
+              {{ planning ? '规划中... ' : '路线规划' }}
             </button>
             <button
               class="btn btn-outline"
@@ -59,10 +57,9 @@
           </div>
         </div>
 
-        <!-- 规划设置 -->
         <div v-if="selectedCount > 0" class="section-card">
           <h2 class="card-title">规划设置</h2>
-          
+
           <div class="form-group">
             <label class="form-label">起点位置</label>
             <div class="input-group">
@@ -77,7 +74,7 @@
                 :disabled="gettingLocation"
                 @click="handleGetCurrentLocation"
               >
-                {{ gettingLocation ? '获取中...' : '当前位置' }}
+                {{ gettingLocation ? '定位中... ' : '当前位置' }}
               </button>
             </div>
           </div>
@@ -91,7 +88,6 @@
                 :class="['transport-btn', { active: transportMode === mode.value }]"
                 @click="transportMode = mode.value"
               >
-                <span class="transport-icon">{{ mode.icon }}</span>
                 <span class="transport-text">{{ mode.label }}</span>
               </button>
             </div>
@@ -120,7 +116,7 @@
                   class="radio-input"
                 />
                 <div class="strategy-content">
-                  <span class="strategy-title">最短路径</span>
+                  <span class="strategy-title">最短路线</span>
                   <span class="strategy-desc">优化路线距离</span>
                 </div>
               </label>
@@ -129,7 +125,6 @@
         </div>
       </div>
 
-      <!-- 右侧：地图展示 -->
       <div class="map-section">
         <div class="map-container" ref="mapContainer"></div>
         <div v-if="routeResult" class="route-info">
@@ -150,15 +145,13 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRouteCart } from '../composables/useRouteCart'
-import { getCurrentLocation } from '../services/routeService'
+import { getCurrentLocation, planMultipleRoute } from '../services/routeService'
 
-// 高德地图相关
 const mapContainer = ref(null)
 let map = null
 let markers = []
 let polyline = null
 
-// 路线购物车
 const {
   selectedAttractions,
   removeAttraction,
@@ -166,9 +159,8 @@ const {
   count: selectedCount
 } = useRouteCart()
 
-// 规划设置
 const startLocation = ref({
-  longitude: 121.4737, // 默认上海坐标（测试用）
+  longitude: 121.4737,
   latitude: 31.2208,
   address: '上海市黄浦区'
 })
@@ -178,40 +170,33 @@ const gettingLocation = ref(false)
 const planning = ref(false)
 const routeResult = ref(null)
 
-// 交通方式选项
 const transportModes = [
-  { value: 'driving', label: '驾车', icon: '🚗' },
-  { value: 'walking', label: '步行', icon: '🚶' },
-  { value: 'transit', label: '公交', icon: '🚌' }
+  { value: 'driving', label: '驾车' },
+  { value: 'walking', label: '步行' },
+  { value: 'transit', label: '公交' }
 ]
 
-// 计算属性
 const canPlan = computed(() => {
   return selectedCount.value > 0 && startLocation.value.longitude && startLocation.value.latitude
 })
 
-// 初始化地图
 const initMap = () => {
   if (!window.AMap || !mapContainer.value) {
     console.error('高德地图API未加载或容器未找到')
     return
   }
 
-  // 创建地图实例
   map = new AMap.Map(mapContainer.value, {
     zoom: 13,
     center: [startLocation.value.longitude, startLocation.value.latitude],
     viewMode: '3D'
   })
 
-  // 添加起点标记
+  clearMap()
   addStartMarker()
-
-  // 绘制测试路线（硬编码）
-  drawTestRoute()
+  addAttractionMarkers(selectedAttractions.value)
 }
 
-// 添加起点标记
 const addStartMarker = () => {
   if (!map) return
 
@@ -228,60 +213,47 @@ const addStartMarker = () => {
   markers.push(marker)
 }
 
-// 绘制测试路线（硬编码）
-const drawTestRoute = () => {
-  if (!map) return
-
-  // 测试路线坐标点（从上海到嘉兴的路线）
-  const testPath = [
-    [121.4737, 31.2208], // 起点：上海
-    [121.4800, 31.2300],
-    [121.4900, 31.2400],
-    [121.5000, 31.2500],
-    [120.7575, 30.7536]  // 终点：嘉兴南湖
-  ]
-
-  // 创建折线
-  polyline = new AMap.Polyline({
-    path: testPath,
-    isOutline: true,
-    outlineColor: '#ffeeff',
-    borderWeight: 3,
-    strokeColor: '#3366FF',
-    strokeOpacity: 1,
-    strokeWeight: 6,
-    strokeStyle: 'solid',
-    lineJoin: 'round',
-    lineCap: 'round',
-    zIndex: 50
-  })
-
-  polyline.setMap(map)
-
-  // 添加终点标记
-  const endMarker = new AMap.Marker({
-    position: testPath[testPath.length - 1],
-    title: '终点：南湖革命纪念馆',
-    icon: new AMap.Icon({
-      size: new AMap.Size(32, 32),
-      image: 'https://webapi.amap.com/theme/v1.3/markers/n/end.png',
-      imageSize: new AMap.Size(32, 32)
-    })
-  })
-  endMarker.setMap(map)
-  markers.push(endMarker)
-
-  // 设置地图视野
-  map.setFitView([polyline], false, [50, 50, 50, 50])
-
-  // 设置测试数据
-  routeResult.value = {
-    total_distance: 125000, // 125公里
-    total_duration: 7200 // 2小时
+const resolveAttractionPosition = (attraction, fallbackLookup) => {
+  const lng = Number(attraction?.longitude)
+  const lat = Number(attraction?.latitude)
+  if (Number.isFinite(lng) && Number.isFinite(lat)) {
+    return { lng, lat }
   }
+  const fallback = fallbackLookup ? fallbackLookup.get(attraction?.id) : null
+  const fallbackLng = Number(fallback?.longitude)
+  const fallbackLat = Number(fallback?.latitude)
+  if (Number.isFinite(fallbackLng) && Number.isFinite(fallbackLat)) {
+    return { lng: fallbackLng, lat: fallbackLat }
+  }
+  return null
 }
 
-// 清除地图上的标记和路线
+const addAttractionMarkers = (items, fallbackLookup) => {
+  if (!map || !Array.isArray(items)) return
+  items.forEach((attraction, index) => {
+    const position = resolveAttractionPosition(attraction, fallbackLookup)
+    if (!position) {
+      return
+    }
+    const marker = new AMap.Marker({
+      position: [position.lng, position.lat],
+      title: `${index + 1}. ${attraction.name}`,
+      icon: new AMap.Icon({
+        size: new AMap.Size(28, 28),
+        image: 'https://webapi.amap.com/theme/v1.3/markers/n/mid.png',
+        imageSize: new AMap.Size(28, 28)
+      }),
+      label: {
+        content: `${index + 1}`,
+        direction: 'right',
+        offset: new AMap.Pixel(10, -6)
+      }
+    })
+    marker.setMap(map)
+    markers.push(marker)
+  })
+}
+
 const clearMap = () => {
   if (markers.length > 0) {
     markers.forEach(marker => {
@@ -295,13 +267,11 @@ const clearMap = () => {
   }
 }
 
-// 绘制路线
-const drawRoute = (path) => {
+const drawRoute = (path, attractions, fallbackLookup) => {
   clearMap()
 
   if (!map || !path || path.length < 2) return
 
-  // 绘制路线
   polyline = new AMap.Polyline({
     path: path,
     isOutline: true,
@@ -318,43 +288,12 @@ const drawRoute = (path) => {
 
   polyline.setMap(map)
 
-  // 添加起点标记
-  const startMarker = new AMap.Marker({
-    position: path[0],
-    title: '起点',
-    icon: new AMap.Icon({
-      size: new AMap.Size(32, 32),
-      image: 'https://webapi.amap.com/theme/v1.3/markers/n/start.png',
-      imageSize: new AMap.Size(32, 32)
-    })
-  })
-  startMarker.setMap(map)
-  markers.push(startMarker)
+  addStartMarker()
+  addAttractionMarkers(attractions || selectedAttractions.value, fallbackLookup)
 
-  // 添加景点标记
-  selectedAttractions.value.forEach((attraction, index) => {
-    const marker = new AMap.Marker({
-      position: [attraction.longitude, attraction.latitude],
-      title: `${index + 1}. ${attraction.name}`,
-      icon: new AMap.Icon({
-        size: new AMap.Size(28, 28),
-        image: 'https://webapi.amap.com/theme/v1.3/markers/n/mid.png',
-        imageSize: new AMap.Size(28, 28)
-      }),
-      label: {
-        content: `${index + 1}`,
-        direction: 'right',
-        offset: new AMap.Pixel(10, 0)
-      }
-    })
-    marker.setMap(map)
-    markers.push(marker)
-  })
-
-  // 添加终点标记
   const endMarker = new AMap.Marker({
     position: path[path.length - 1],
-    title: '终点',
+    title: '??',
     icon: new AMap.Icon({
       size: new AMap.Size(32, 32),
       image: 'https://webapi.amap.com/theme/v1.3/markers/n/end.png',
@@ -364,11 +303,45 @@ const drawRoute = (path) => {
   endMarker.setMap(map)
   markers.push(endMarker)
 
-  // 设置地图视野
   map.setFitView([polyline, ...markers], false, [50, 50, 50, 50])
 }
 
-// 获取当前位置
+const parsePolyline = (polylineValue) => {
+  if (!polylineValue) return []
+  return polylineValue
+    .split(';')
+    .map(point => {
+      const [lng, lat] = point.split(',')
+      const lngNum = Number(lng)
+      const latNum = Number(lat)
+      if (!Number.isFinite(lngNum) || !Number.isFinite(latNum)) {
+        return null
+      }
+      return [lngNum, latNum]
+    })
+    .filter(Boolean)
+}
+
+const buildPathFromPlan = (plan, attractions) => {
+  const polylinePath = parsePolyline(plan?.fullPolyline)
+  if (polylinePath.length >= 2) {
+    return polylinePath
+  }
+
+  const points = []
+  if (startLocation.value?.longitude && startLocation.value?.latitude) {
+    points.push([startLocation.value.longitude, startLocation.value.latitude])
+  }
+  ;(attractions || []).forEach(attraction => {
+    const lng = Number(attraction.longitude)
+    const lat = Number(attraction.latitude)
+    if (Number.isFinite(lng) && Number.isFinite(lat)) {
+      points.push([lng, lat])
+    }
+  })
+  return points
+}
+
 const handleGetCurrentLocation = async () => {
   gettingLocation.value = true
   try {
@@ -378,66 +351,65 @@ const handleGetCurrentLocation = async () => {
       latitude: location.latitude,
       address: location.address || ''
     }
-    // 更新地图中心
     if (map) {
       map.setCenter([location.longitude, location.latitude])
-      // 更新起点标记
       clearMap()
       addStartMarker()
-      drawTestRoute()
+      addAttractionMarkers(selectedAttractions.value)
     }
   } catch (err) {
-    console.error('获取当前位置失败:', err)
+    console.error('获取当前位置失败', err)
     alert('获取当前位置失败，请手动输入地址')
   } finally {
     gettingLocation.value = false
   }
 }
 
-// 规划路线
 const planRoute = async () => {
   planning.value = true
   routeResult.value = null
 
   try {
-    // TODO: 调用后端API规划路线
-    // 目前先使用测试数据
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const response = await planMultipleRoute({
+      attraction_ids: selectedAttractions.value.map(item => item.id),
+      start_location: startLocation.value,
+      end_location: null,
+      transport_mode: transportMode.value,
+      strategy: strategy.value
+    })
 
-    // 构建路线路径（测试用）
-    const path = [
-      [startLocation.value.longitude, startLocation.value.latitude],
-      ...selectedAttractions.value.map(attr => [attr.longitude, attr.latitude])
-    ]
+    const orderedAttractions = Array.isArray(response?.attractions) && response.attractions.length > 0
+      ? response.attractions
+      : selectedAttractions.value
+    const fallbackLookup = new Map(
+      selectedAttractions.value.map(item => [item.id, item])
+    )
+    const plan = response?.routePlan
+    const path = buildPathFromPlan(plan, orderedAttractions)
+    drawRoute(path, orderedAttractions, fallbackLookup)
 
-    // 绘制路线
-    drawRoute(path)
-
-    // 设置测试结果
     routeResult.value = {
-      total_distance: 125000,
-      total_duration: 7200
+      total_distance: plan?.totalDistance ?? 0,
+      total_duration: plan?.totalDuration ?? 0
     }
   } catch (err) {
-    console.error('路线规划失败:', err)
-    alert('路线规划失败，请稍后重试')
+    console.error('??????:', err)
+    alert('?????????????')
   } finally {
     planning.value = false
   }
 }
 
-// 格式化距离
 const formatDistance = (meters) => {
-  if (!meters) return '0米'
+  if (!meters) return '0 公里'
   if (meters < 1000) {
-    return `${Math.round(meters)}米`
+    return `${Math.round(meters)} 米`
   }
-  return `${(meters / 1000).toFixed(2)}公里`
+  return `${(meters / 1000).toFixed(2)} 公里`
 }
 
-// 格式化时间
 const formatDuration = (seconds) => {
-  if (!seconds) return '0分钟'
+  if (!seconds) return '0 分钟'
   const hours = Math.floor(seconds / 3600)
   const minutes = Math.floor((seconds % 3600) / 60)
   if (hours > 0) {
@@ -446,35 +418,29 @@ const formatDuration = (seconds) => {
   return `${minutes}分钟`
 }
 
-// 监听选中景点变化，更新地图
 watch(selectedAttractions, () => {
-  if (selectedAttractions.value.length > 0 && map) {
-    // 清除旧标记
+  if (map) {
     clearMap()
-    // 重新绘制测试路线（后续会改为实际路线）
-    drawTestRoute()
+    addStartMarker()
+    addAttractionMarkers(selectedAttractions.value)
   }
 }, { deep: true })
 
-// 生命周期
 onMounted(() => {
-  // 等待高德地图API加载完成
   if (window.AMap) {
     initMap()
   } else {
-    // 如果API还未加载，等待加载完成
     const checkAMap = setInterval(() => {
       if (window.AMap) {
         clearInterval(checkAMap)
         initMap()
       }
     }, 100)
-    
-    // 10秒后超时
+
     setTimeout(() => {
       clearInterval(checkAMap)
       if (!window.AMap) {
-        console.error('高德地图API加载超时')
+        console.error('__AMAP_TIMEOUT__')
       }
     }, 10000)
   }
@@ -496,7 +462,6 @@ onUnmounted(() => {
   padding: var(--spacing-6);
 }
 
-/* 页面标题 */
 .page-header {
   margin-bottom: var(--spacing-6);
   text-align: center;
@@ -514,7 +479,6 @@ onUnmounted(() => {
   color: var(--color-text-secondary);
 }
 
-/* 内容区域 */
 .route-content {
   display: grid;
   grid-template-columns: 400px 1fr;
@@ -523,7 +487,6 @@ onUnmounted(() => {
   min-height: 600px;
 }
 
-/* 左侧：已选景点 */
 .selected-section {
   display: flex;
   flex-direction: column;
@@ -559,7 +522,6 @@ onUnmounted(() => {
   border-radius: var(--radius-sm);
 }
 
-/* 空状态 */
 .empty-state {
   text-align: center;
   padding: var(--spacing-8) var(--spacing-4);
@@ -576,7 +538,6 @@ onUnmounted(() => {
   color: var(--color-text-secondary);
 }
 
-/* 景点列表 */
 .attraction-list {
   display: flex;
   flex-direction: column;
@@ -662,7 +623,6 @@ onUnmounted(() => {
   color: white;
 }
 
-/* 卡片操作 */
 .card-actions {
   display: flex;
   flex-direction: column;
@@ -672,7 +632,6 @@ onUnmounted(() => {
   border-top: 1px solid #e0e0e0;
 }
 
-/* 表单组 */
 .form-group {
   margin-bottom: var(--spacing-5);
 }
@@ -703,7 +662,6 @@ onUnmounted(() => {
   border-color: var(--color-primary);
 }
 
-/* 交通方式 */
 .transport-options {
   display: flex;
   gap: var(--spacing-2);
@@ -733,16 +691,11 @@ onUnmounted(() => {
   color: white;
 }
 
-.transport-icon {
-  font-size: var(--font-size-xl);
-}
-
 .transport-text {
   font-size: var(--font-size-xs);
   font-weight: 500;
 }
 
-/* 规划策略 */
 .strategy-options {
   display: flex;
   flex-direction: column;
@@ -787,7 +740,6 @@ onUnmounted(() => {
   color: var(--color-text-secondary);
 }
 
-/* 按钮 */
 .btn {
   padding: var(--spacing-3) var(--spacing-5);
   border-radius: var(--radius-md);
@@ -830,7 +782,6 @@ onUnmounted(() => {
   font-size: var(--font-size-sm);
 }
 
-/* 右侧：地图 */
 .map-section {
   display: flex;
   flex-direction: column;
@@ -845,7 +796,6 @@ onUnmounted(() => {
   box-shadow: var(--shadow-md);
 }
 
-/* 路线信息 */
 .route-info {
   display: flex;
   gap: var(--spacing-4);
@@ -873,7 +823,6 @@ onUnmounted(() => {
   color: var(--color-primary);
 }
 
-/* 响应式设计 */
 @media (max-width: 1024px) {
   .route-content {
     grid-template-columns: 1fr;

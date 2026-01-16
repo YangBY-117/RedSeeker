@@ -1,5 +1,6 @@
 package com.redseeker.place;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -14,6 +15,7 @@ public class PlaceDistanceSortRequest {
   @Valid
   private List<PlaceCandidate> places;
 
+  @JsonProperty("transport_mode")
   private String transportMode;
 
   public PlaceLocation getOrigin() {

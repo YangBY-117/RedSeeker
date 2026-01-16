@@ -1,7 +1,12 @@
 package com.redseeker.diary;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class DiaryRatingResponse {
+  @JsonProperty("average_rating")
   private Double averageRating;
+
+  @JsonProperty("total_ratings")
   private Integer totalRatings;
 
   public DiaryRatingResponse() {

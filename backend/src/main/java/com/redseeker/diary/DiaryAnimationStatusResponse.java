@@ -1,8 +1,14 @@
 package com.redseeker.diary;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class DiaryAnimationStatusResponse {
+  @JsonProperty("task_id")
   private String taskId;
+
   private String status;
+
+  @JsonProperty("video_url")
   private String videoUrl;
 
   public DiaryAnimationStatusResponse() {

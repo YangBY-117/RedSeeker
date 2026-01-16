@@ -18,4 +18,7 @@ server:
 zhipu:
   api:
     key: "dc429f40fc2d4c42af23eed404a1ba2b.d4Bq0fTcEyIYrEMc" # 请替换为您的API Key
+amap:
+  api:
+    key: "2039f165180b1ece6c8cfb1ae448339b"
 

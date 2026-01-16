@@ -29,6 +29,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -42,9 +43,9 @@ public class RouteServiceImpl implements RouteService {
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
 
-  public RouteServiceImpl() {
+  public RouteServiceImpl(@Value("${amap.api.key:}") String amapKeyConfig) {
     this.databaseUrl = resolveDatabaseUrl();
-    this.amapKey = resolveAmapKey();
+    this.amapKey = resolveAmapKey(amapKeyConfig);
     this.httpClient = HttpClient.newHttpClient();
     this.objectMapper = new ObjectMapper();
   }
@@ -186,7 +187,7 @@ public class RouteServiceImpl implements RouteService {
     RouteInfo info = new RouteInfo();
     info.setDistance(pathNode.path("distance").asInt());
     info.setDuration(pathNode.path("duration").asInt());
-    info.setPolyline(pathNode.path("polyline").asText(null));
+    String polyline = pathNode.path("polyline").asText(null);
     List<RouteStep> steps = new ArrayList<>();
     if (pathNode.path("steps").isArray()) {
       for (JsonNode step : pathNode.path("steps")) {
@@ -199,6 +200,10 @@ public class RouteServiceImpl implements RouteService {
                 step.path("polyline").asText(null)));
       }
     }
+    if (polyline == null || polyline.isBlank()) {
+      polyline = buildPolylineFromSteps(steps);
+    }
+    info.setPolyline(polyline);
     info.setSteps(steps);
     return info;
   }
@@ -212,7 +217,7 @@ public class RouteServiceImpl implements RouteService {
     RouteInfo info = new RouteInfo();
     info.setDistance(first.path("distance").asInt());
     info.setDuration(first.path("duration").asInt());
-    info.setPolyline(null);
+    String polyline = null;
     List<RouteStep> steps = new ArrayList<>();
     if (first.path("segments").isArray()) {
       for (JsonNode segment : first.path("segments")) {
@@ -230,8 +235,30 @@ public class RouteServiceImpl implements RouteService {
         }
       }
     }
+    if (polyline == null || polyline.isBlank()) {
+      polyline = buildPolylineFromSteps(steps);
+    }
+    info.setPolyline(polyline);
     info.setSteps(steps);
     return info;
+  }
+
+  private String buildPolylineFromSteps(List<RouteStep> steps) {
+    if (steps == null || steps.isEmpty()) {
+      return null;
+    }
+    StringBuilder builder = new StringBuilder();
+    for (RouteStep step : steps) {
+      String polyline = step.getPolyline();
+      if (polyline == null || polyline.isBlank()) {
+        continue;
+      }
+      if (builder.length() > 0) {
+        builder.append(";");
+      }
+      builder.append(polyline);
+    }
+    return builder.length() == 0 ? null : builder.toString();
   }
 
   private String buildQuery(Map<String, String> query) {
@@ -487,16 +514,17 @@ public class RouteServiceImpl implements RouteService {
       try (ResultSet rs = statement.executeQuery()) {
         while (rs.next()) {
           long id = rs.getLong("id");
-          AttractionSummary summary =
-              summaries.computeIfAbsent(
-                  id,
-                  key ->
-                      new AttractionSummary(
-                          key,
-                          rs.getString("name"),
-                          rs.getString("address"),
-                          rs.getDouble("longitude"),
-                          rs.getDouble("latitude")));
+          AttractionSummary summary = summaries.get(id);
+          if (summary == null) {
+            summary =
+                new AttractionSummary(
+                    id,
+                    rs.getString("name"),
+                    rs.getString("address"),
+                    rs.getDouble("longitude"),
+                    rs.getDouble("latitude"));
+            summaries.put(id, summary);
+          }
           Integer start = rs.getObject("start_year", Integer.class);
           if (start != null
               && (summary.getStageStart() == null || start < summary.getStageStart())) {
@@ -536,7 +564,10 @@ public class RouteServiceImpl implements RouteService {
     return "jdbc:sqlite:database/red_tourism.db";
   }
 
-  private String resolveAmapKey() {
+  private String resolveAmapKey(String configKey) {
+    if (configKey != null && !configKey.isBlank()) {
+      return configKey;
+    }
     String key = System.getenv("AMAP_KEY");
     if (key != null && !key.isBlank()) {
       return key;
@@ -545,3 +576,8 @@ public class RouteServiceImpl implements RouteService {
     return backendKey != null && !backendKey.isBlank() ? backendKey : null;
   }
 }
+
+
+
+
+
