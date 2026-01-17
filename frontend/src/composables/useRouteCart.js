@@ -26,7 +26,10 @@ export function useRouteCart() {
         longitude: lng,
         latitude: lat,
         category: attraction.category,
-        categoryName: attraction.categoryName
+        categoryName: attraction.categoryName,
+        stageStart: attraction.stage_start ?? attraction.stageStart,
+        stageEnd: attraction.stage_end ?? attraction.stageEnd,
+        stageName: attraction.stage_name ?? attraction.stageName
       })
     }
   }

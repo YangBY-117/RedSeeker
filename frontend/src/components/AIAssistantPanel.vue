@@ -177,6 +177,18 @@ const props = defineProps({
   selectedImages: {
     type: Array,
     default: () => []
+  },
+  destination: {
+    type: String,
+    default: ''
+  },
+  travelDate: {
+    type: String,
+    default: ''
+  },
+  attractionIds: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -254,8 +266,9 @@ const handleGenerateDiary = async () => {
   try {
     const result = await generateDiaryContent({
       prompt: writePrompt.value,
-      destination: '',
-      travel_date: ''
+      destination: props.destination,
+      travel_date: props.travelDate,
+      attraction_ids: props.attractionIds
     })
     generatedContent.value = result.content || result
     // 如果返回了标题，也可以使用

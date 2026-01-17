@@ -18,6 +18,9 @@ public class RecommendItem {
   private Integer heatScore; // Heat score based on browse count
   private Double longitude; // Longitude coordinate
   private Double latitude; // Latitude coordinate
+  private Integer stageStart; // Historical stage start year
+  private Integer stageEnd; // Historical stage end year
+  private String stageName; // Historical period name
 
   public RecommendItem() {
   }
@@ -36,13 +39,14 @@ public class RecommendItem {
                        String address, String businessHours, Double perCapitaConsumption,
                        Double averageRating, Integer totalRatings, Integer heatScore) {
     this(id, name, category, tags, score, history, reason, address, businessHours, perCapitaConsumption,
-         averageRating, totalRatings, heatScore, null, null);
+         averageRating, totalRatings, heatScore, null, null, null, null, null);
   }
 
   public RecommendItem(String id, String name, String category, List<String> tags, double score, String history, String reason,
                        String address, String businessHours, Double perCapitaConsumption,
                        Double averageRating, Integer totalRatings, Integer heatScore,
-                       Double longitude, Double latitude) {
+                       Double longitude, Double latitude,
+                       Integer stageStart, Integer stageEnd, String stageName) {
     this.id = id;
     this.name = name;
     this.category = category;
@@ -58,6 +62,9 @@ public class RecommendItem {
     this.heatScore = heatScore;
     this.longitude = longitude;
     this.latitude = latitude;
+    this.stageStart = stageStart;
+    this.stageEnd = stageEnd;
+    this.stageName = stageName;
   }
 
   public String getId() {
@@ -178,5 +185,29 @@ public class RecommendItem {
 
   public void setLatitude(Double latitude) {
     this.latitude = latitude;
+  }
+
+  public Integer getStageStart() {
+    return stageStart;
+  }
+
+  public void setStageStart(Integer stageStart) {
+    this.stageStart = stageStart;
+  }
+
+  public Integer getStageEnd() {
+    return stageEnd;
+  }
+
+  public void setStageEnd(Integer stageEnd) {
+    this.stageEnd = stageEnd;
+  }
+
+  public String getStageName() {
+    return stageName;
+  }
+
+  public void setStageName(String stageName) {
+    this.stageName = stageName;
   }
 }

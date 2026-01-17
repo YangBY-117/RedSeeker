@@ -11,6 +11,9 @@ public class RecommendRequest {
 
   private String travelStyle;
   private Integer days;
+  private Double userLongitude;
+  private Double userLatitude;
+  private String visitTime;
 
   public String getCity() {
     return city;
@@ -50,5 +53,29 @@ public class RecommendRequest {
 
   public void setDays(Integer days) {
     this.days = days;
+  }
+
+  public Double getUserLongitude() {
+    return userLongitude;
+  }
+
+  public void setUserLongitude(Double userLongitude) {
+    this.userLongitude = userLongitude;
+  }
+
+  public Double getUserLatitude() {
+    return userLatitude;
+  }
+
+  public void setUserLatitude(Double userLatitude) {
+    this.userLatitude = userLatitude;
+  }
+
+  public String getVisitTime() {
+    return visitTime;
+  }
+
+  public void setVisitTime(String visitTime) {
+    this.visitTime = visitTime;
   }
 }

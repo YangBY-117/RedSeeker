@@ -129,6 +129,19 @@
             <h3 class="results-title">搜索结果</h3>
             <span class="results-count">{{ places.length }} 个结果</span>
           </div>
+          <div v-if="selectedPlace" class="navigation-panel">
+            <div class="navigation-info">
+              已选中：{{ selectedPlace.name }}
+            </div>
+            <div class="navigation-actions">
+              <button class="btn btn-primary btn-nav" @click="navigateToSelectedPlace">
+                开始导航
+              </button>
+              <button v-if="navigationActive" class="btn btn-outline btn-nav" @click="clearNavigation">
+                清除路线
+              </button>
+            </div>
+          </div>
 
           <div v-if="searching" class="loading-state">
             <p>搜索中...</p>
@@ -178,6 +191,7 @@ import { getRecommendations } from '../services/recommendService.js'
 const mapContainer = ref(null)
 let map = null
 let markers = []
+let drivingService = null
 
 // 位置相关
 const locationMode = ref('current') // 'current' | 'attraction'
@@ -203,6 +217,12 @@ const places = ref([])
 const selectedPlaceIndex = ref(-1)
 const sortBy = ref('straight') // 'straight' | 'real'
 const sortingRealDistance = ref(false)
+const navigationActive = ref(false)
+
+const selectedPlace = computed(() => {
+  if (selectedPlaceIndex.value < 0) return null
+  return places.value[selectedPlaceIndex.value] || null
+})
 
 // 计算属性
 const canSearch = computed(() => {
@@ -237,6 +257,17 @@ const clearMarkers = () => {
     })
     markers = []
   }
+}
+
+const clearRouteOverlays = () => {
+  if (drivingService && typeof drivingService.clear === 'function') {
+    drivingService.clear()
+  }
+  if (map && map.getAllOverlays) {
+    const polylines = map.getAllOverlays('polyline')
+    polylines.forEach(polyline => map.remove(polyline))
+  }
+  navigationActive.value = false
 }
 
 // 在地图上显示场所
@@ -421,6 +452,7 @@ const handleSearch = async () => {
 
   searching.value = true
   hasSearched.value = true
+  clearRouteOverlays()
 
   try {
     const result = await searchNearbyPlaces({
@@ -544,6 +576,53 @@ const selectPlace = (index) => {
   }
 }
 
+const navigateToSelectedPlace = () => {
+  if (!selectedPlace.value) return
+  const originLng = selectedLocation.value.longitude
+  const originLat = selectedLocation.value.latitude
+  const destinationLng = selectedPlace.value.location?.longitude || selectedPlace.value.location?.lng
+  const destinationLat = selectedPlace.value.location?.latitude || selectedPlace.value.location?.lat
+  if (!originLng || !originLat || !destinationLng || !destinationLat) {
+    alert('缺少起点或目的地坐标，无法导航')
+    return
+  }
+  if (!window.AMap) {
+    alert('高德地图API未加载，无法导航')
+    return
+  }
+  window.AMap.plugin('AMap.Driving', () => {
+    if (!map) return
+    if (!drivingService) {
+      drivingService = new AMap.Driving({
+        map,
+        hideMarkers: true
+      })
+    }
+    clearRouteOverlays()
+    drivingService.search(
+      new AMap.LngLat(originLng, originLat),
+      new AMap.LngLat(destinationLng, destinationLat),
+      (status) => {
+        if (status === 'complete') {
+          navigationActive.value = true
+          if (map && map.getAllOverlays) {
+            const overlays = map.getAllOverlays('polyline')
+            if (overlays.length > 0) {
+              map.setFitView(overlays, false, [50, 50, 50, 50])
+            }
+          }
+        } else {
+          alert('路线规划失败，请稍后重试')
+        }
+      }
+    )
+  })
+}
+
+const clearNavigation = () => {
+  clearRouteOverlays()
+}
+
 // 格式化距离
 const formatDistance = (distance) => {
   if (!distance) return '距离未知'
@@ -591,6 +670,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   clearMarkers()
+  clearRouteOverlays()
   if (map) {
     map.destroy()
     map = null
@@ -852,6 +932,33 @@ onUnmounted(() => {
 .results-count {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+}
+
+.navigation-panel {
+  background: #fff6f6;
+  border: 1px solid rgba(198, 40, 40, 0.2);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+}
+
+.navigation-info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.navigation-actions {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.btn-nav {
+  padding: 6px 14px;
+  font-size: var(--font-size-sm);
 }
 
 .loading-state,
