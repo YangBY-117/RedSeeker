@@ -10,6 +10,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,11 +42,13 @@ public class AIServiceImpl implements AIService {
   private final HttpClient httpClient;
   private final ObjectMapper objectMapper;
   private final com.redseeker.recommend.AiService textAiService; // 用于生成日记内容
+  private final String databaseUrl;
 
   public AIServiceImpl(com.redseeker.recommend.AiService textAiService) {
     this.textAiService = textAiService;
     this.httpClient = HttpClient.newHttpClient();
     this.objectMapper = new ObjectMapper();
+    this.databaseUrl = resolveDatabaseUrl();
     LOGGER.info("AIService初始化完成，使用阿里云API密钥: {}", ALIYUN_API_KEY.substring(0, 10) + "***");
   }
 
@@ -269,6 +279,30 @@ public class AIServiceImpl implements AIService {
     if (request.getTravelDate() != null && !request.getTravelDate().isBlank()) {
       prompt.append("旅游日期：").append(request.getTravelDate());
     }
+    List<HistoricalEventSnapshot> events = loadHistoricalEvents(request);
+    if (!events.isEmpty()) {
+      prompt.append("以下是相关历史事件与景点背景，请综合这些历史事件进行写作，体现时间脉络与感悟：");
+      for (HistoricalEventSnapshot event : events) {
+        prompt.append("\n- ")
+            .append(event.attractionName());
+        if (event.period() != null && !event.period().isBlank()) {
+          prompt.append("（").append(event.period()).append("）");
+        }
+        if (event.eventName() != null && !event.eventName().isBlank()) {
+          prompt.append(event.eventName());
+        }
+        if (event.startYear() != null || event.endYear() != null) {
+          prompt.append("【")
+              .append(event.startYear() != null ? event.startYear() : "?")
+              .append("~")
+              .append(event.endYear() != null ? event.endYear() : "?")
+              .append("】");
+        }
+        if (event.description() != null && !event.description().isBlank()) {
+          prompt.append("：").append(event.description());
+        }
+      }
+    }
     prompt.append("请写一篇真实、感人的红色旅游日记，包含对革命历史的感悟。");
     return prompt.toString();
   }
@@ -284,4 +318,112 @@ public class AIServiceImpl implements AIService {
     }
     return firstLine;
   }
+
+  private List<HistoricalEventSnapshot> loadHistoricalEvents(DiaryGenerateRequest request) {
+    List<Long> attractionIds = new ArrayList<>();
+    if (request.getAttractionIds() != null) {
+      for (Long id : request.getAttractionIds()) {
+        if (id != null && id > 0) {
+          attractionIds.add(id);
+        }
+      }
+    }
+
+    if (attractionIds.isEmpty() && request.getDestination() != null && !request.getDestination().isBlank()) {
+      attractionIds = loadAttractionIdsByDestination(request.getDestination());
+    }
+
+    if (attractionIds.isEmpty()) {
+      return List.of();
+    }
+
+    String placeholders = attractionIds.stream().map(id -> "?").reduce((a, b) -> a + "," + b).orElse("");
+    String sql =
+        "SELECT a.name AS attraction_name, he.event_name, he.period, he.start_year, he.end_year, he.description "
+            + "FROM attractions a "
+            + "LEFT JOIN attraction_events ae ON ae.attraction_id = a.id "
+            + "LEFT JOIN historical_events he ON he.id = ae.event_id "
+            + "WHERE a.id IN (" + placeholders + ") "
+            + "ORDER BY he.start_year ASC";
+
+    List<HistoricalEventSnapshot> events = new ArrayList<>();
+    try (Connection connection = openConnection();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      for (int i = 0; i < attractionIds.size(); i++) {
+        statement.setLong(i + 1, attractionIds.get(i));
+      }
+      try (ResultSet rs = statement.executeQuery()) {
+        while (rs.next()) {
+          String attractionName = rs.getString("attraction_name");
+          String eventName = rs.getString("event_name");
+          String period = rs.getString("period");
+          Integer startYear = rs.getObject("start_year", Integer.class);
+          Integer endYear = rs.getObject("end_year", Integer.class);
+          String description = rs.getString("description");
+          if ((eventName == null || eventName.isBlank())
+              && (description == null || description.isBlank())) {
+            continue;
+          }
+          events.add(new HistoricalEventSnapshot(
+              attractionName,
+              eventName,
+              period,
+              startYear,
+              endYear,
+              description));
+        }
+      }
+    } catch (SQLException ex) {
+      LOGGER.warn("加载历史事件失败", ex);
+    }
+
+    return events;
+  }
+
+  private List<Long> loadAttractionIdsByDestination(String destination) {
+    String sql = "SELECT id FROM attractions WHERE name LIKE ? OR address LIKE ? LIMIT 5";
+    List<Long> ids = new ArrayList<>();
+    String pattern = "%" + destination.trim() + "%";
+    try (Connection connection = openConnection();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setString(1, pattern);
+      statement.setString(2, pattern);
+      try (ResultSet rs = statement.executeQuery()) {
+        while (rs.next()) {
+          ids.add(rs.getLong("id"));
+        }
+      }
+    } catch (SQLException ex) {
+      LOGGER.warn("根据目的地加载景点失败: {}", destination, ex);
+    }
+    return ids;
+  }
+
+  private Connection openConnection() throws SQLException {
+    return DriverManager.getConnection(databaseUrl);
+  }
+
+  private String resolveDatabaseUrl() {
+    String override = System.getenv("REDSEEKER_DB_PATH");
+    if (override != null && !override.isBlank()) {
+      return "jdbc:sqlite:" + override;
+    }
+    Path direct = Paths.get("database", "red_tourism.db");
+    if (Files.exists(direct)) {
+      return "jdbc:sqlite:" + direct.toAbsolutePath();
+    }
+    Path parent = Paths.get("..", "database", "red_tourism.db");
+    if (Files.exists(parent)) {
+      return "jdbc:sqlite:" + parent.toAbsolutePath();
+    }
+    return "jdbc:sqlite:database/red_tourism.db";
+  }
+
+  private record HistoricalEventSnapshot(
+      String attractionName,
+      String eventName,
+      String period,
+      Integer startYear,
+      Integer endYear,
+      String description) {}
 }

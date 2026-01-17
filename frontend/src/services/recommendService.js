@@ -18,6 +18,9 @@ import attrNameData from '../data/attr_name.json'
  * @param {string} params.travelStyle - 旅行风格（可选）
  * @param {number} params.days - 出行天数（可选）
  * @param {number} params.category - 类别ID（可选，1-9）
+ * @param {number} params.userLongitude - 用户经度（可选）
+ * @param {number} params.userLatitude - 用户纬度（可选）
+ * @param {string} params.visitTime - 访问时间（可选，ISO字符串）
  * @param {number} params.page - 页码（可选）
  * @param {number} params.pageSize - 每页数量（可选）
  * @returns {Promise<Object>} 推荐列表
@@ -29,6 +32,9 @@ export async function getRecommendations(params = {}) {
     preferences = [],
     travelStyle,
     days,
+    userLongitude,
+    userLatitude,
+    visitTime,
     category,
     page = 1,
     pageSize = 12
@@ -40,7 +46,10 @@ export async function getRecommendations(params = {}) {
     preferences: preferences.length > 0 ? preferences : undefined,
     travelStyle,
     days,
-    userId: userId ? Number(userId) : undefined
+    userId: userId ? Number(userId) : undefined,
+    userLongitude: typeof userLongitude === 'number' ? userLongitude : undefined,
+    userLatitude: typeof userLatitude === 'number' ? userLatitude : undefined,
+    visitTime: visitTime || undefined
   }
 
   // 移除 undefined 字段
@@ -142,6 +151,8 @@ export async function getRecommendations(params = {}) {
     }
 
     const processedAttractions = paginatedAttractions.map(attr => {
+      const idStr = String(attr.id)
+      const dbItem = idToAttrName[idStr] || {}
       // 根据后端返回的category获取数据库的类别名
       const categoryName = getCategoryNameFromBackendCategory(attr.category)
       // 将 score (0.0-1.0) 转换为 recommend_score (0-100)
@@ -162,8 +173,6 @@ export async function getRecommendations(params = {}) {
         imageUrl = ''
       }
 
-      const idStr = String(attr.id)
-      const dbItem = idToAttrName[idStr] || {}
       return {
         ...attr,
         // 基本信息
@@ -193,13 +202,16 @@ export async function getRecommendations(params = {}) {
         // 评分和热度优先级：后端 > db > 0
         average_rating:
           attr.averageRating !== null && attr.averageRating !== undefined
-            ? (attr.averageRating * 5)
+            ? attr.averageRating
             : (dbItem['评分'] || (attr.score ? attr.score * 5 : attr.average_rating) || null),
         total_ratings: attr.totalRatings !== null && attr.totalRatings !== undefined ? attr.totalRatings : (attr.total_ratings || 0),
         heat_score:
           attr.heatScore !== null && attr.heatScore !== undefined
             ? attr.heatScore
-            : (dbItem['热度'] || attr.heat_score || null)
+            : (dbItem['热度'] || attr.heat_score || null),
+        stage_start: attr.stageStart,
+        stage_end: attr.stageEnd,
+        stage_name: attr.stageName
       }
     })
 
@@ -368,7 +380,10 @@ export async function searchAttractions(params = {}) {
         // 优先使用后端返回的评分和热度数据
         average_rating: attr.averageRating !== null && attr.averageRating !== undefined ? attr.averageRating : (attr.average_rating || attr.rating || null),
         total_ratings: attr.totalRatings !== null && attr.totalRatings !== undefined ? attr.totalRatings : (attr.total_ratings || attr.ratingCount || 0),
-        heat_score: attr.heatScore !== null && attr.heatScore !== undefined ? attr.heatScore : (attr.heat_score || null)
+        heat_score: attr.heatScore !== null && attr.heatScore !== undefined ? attr.heatScore : (attr.heat_score || null),
+        stage_start: attr.stageStart,
+        stage_end: attr.stageEnd,
+        stage_name: attr.stageName
       }
     })
 

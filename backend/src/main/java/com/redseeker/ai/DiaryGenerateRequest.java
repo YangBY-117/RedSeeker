@@ -1,6 +1,7 @@
 package com.redseeker.ai;
 
 import jakarta.validation.constraints.NotBlank;
+import java.util.List;
 
 public class DiaryGenerateRequest {
   @NotBlank
@@ -8,6 +9,7 @@ public class DiaryGenerateRequest {
   
   private String destination;
   private String travelDate;
+  private List<Long> attractionIds;
 
   public String getPrompt() {
     return prompt;
@@ -31,5 +33,13 @@ public class DiaryGenerateRequest {
 
   public void setTravelDate(String travelDate) {
     this.travelDate = travelDate;
+  }
+
+  public List<Long> getAttractionIds() {
+    return attractionIds;
+  }
+
+  public void setAttractionIds(List<Long> attractionIds) {
+    this.attractionIds = attractionIds;
   }
 }

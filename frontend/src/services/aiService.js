@@ -11,13 +11,15 @@ import { api } from './api'
  * @param {string} params.prompt - 用户描述
  * @param {string} params.destination - 目的地（可选）
  * @param {string} params.travel_date - 旅游日期（可选）
+ * @param {Array<number|string>} params.attraction_ids - 关联景点ID（可选）
  * @returns {Promise<Object>} 生成的日记内容 {title, content}
  */
 export async function generateDiaryContent(params) {
   const response = await api.post('/ai/generate-diary', {
     prompt: params.prompt,
     destination: params.destination,
-    travelDate: params.travel_date
+    travelDate: params.travel_date,
+    attractionIds: params.attraction_ids
   }, {
     timeout: 120000 // AI生成日记内容可能需要更长时间，设置为120秒
   })

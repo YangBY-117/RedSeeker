@@ -22,7 +22,7 @@
 
           <div v-else class="attraction-list">
             <div
-              v-for="(attraction, index) in selectedAttractions"
+              v-for="(attraction, index) in orderedAttractions"
               :key="attraction.id"
               class="attraction-item"
             >
@@ -30,6 +30,9 @@
               <div class="item-content">
                 <h3 class="item-name">{{ attraction.name }}</h3>
                 <p class="item-address">{{ attraction.address }}</p>
+                <p v-if="formatStage(attraction)" class="item-stage">
+                  历史时间：{{ formatStage(attraction) }}
+                </p>
                 <span class="item-category">{{ attraction.categoryName }}</span>
               </div>
               <button
@@ -225,7 +228,7 @@ function searchAndMarkLocation(keyword, locationRef, markerType = 'normal') {
 }
 
 // 创建自定义标记
-function createMarker(position, title, markerType = 'normal') {
+function createMarker(position, title, markerType = 'normal', stageLabel = '') {
   if (!map) return null
   
   let markerContent = ''
@@ -242,12 +245,14 @@ function createMarker(position, title, markerType = 'normal') {
     markerContent = `<div class="custom-content-marker">
       <img src="//a.amap.com/jsapi_demos/static/demo-center/icons/dir-marker.png">
       <div class="marker-label">终</div>
+      ${stageLabel ? `<div class="marker-stage">${stageLabel}</div>` : ''}
     </div>`
   } else if (typeof markerType === 'number') {
     // 途经点标记（带编号）
     markerContent = `<div class="custom-content-marker">
       <img src="//a.amap.com/jsapi_demos/static/demo-center/icons/dir-marker.png">
       <div class="marker-label">${markerType}</div>
+      ${stageLabel ? `<div class="marker-stage">${stageLabel}</div>` : ''}
     </div>`
   } else {
     // 普通标记
@@ -338,6 +343,25 @@ const strategy = ref('history_first')
 const gettingLocation = ref(false)
 const planning = ref(false)
 const routeResult = ref(null)
+const orderedAttractions = computed(() => {
+  const list = [...selectedAttractions.value]
+  if (strategy.value !== 'history_first') {
+    return list
+  }
+  return list.sort((a, b) => {
+    const aStart = a.stageStart ?? Number.MAX_SAFE_INTEGER
+    const bStart = b.stageStart ?? Number.MAX_SAFE_INTEGER
+    if (aStart !== bStart) {
+      return aStart - bStart
+    }
+    const aEnd = a.stageEnd ?? Number.MAX_SAFE_INTEGER
+    const bEnd = b.stageEnd ?? Number.MAX_SAFE_INTEGER
+    if (aEnd !== bEnd) {
+      return aEnd - bEnd
+    }
+    return String(a.name || '').localeCompare(String(b.name || ''))
+  })
+})
 
 // 交通方式选项
 // 交通方式：只支持驾车
@@ -618,15 +642,15 @@ const planRoute = async () => {
     
     // 第三步：标注所有景点（使用景点已有的坐标，不搜索）
     // 因为景点坐标已经在数据库中，直接使用坐标创建标记
-    if (map && selectedAttractions.value && selectedAttractions.value.length > 0) {
-      selectedAttractions.value.forEach((attraction, index) => {
+    if (map && orderedAttractions.value && orderedAttractions.value.length > 0) {
+      orderedAttractions.value.forEach((attraction, index) => {
         if (attraction && (attraction.longitude || attraction.lng) && (attraction.latitude || attraction.lat)) {
           const lng = attraction.longitude ?? attraction.lng
           const lat = attraction.latitude ?? attraction.lat
           
           // 景点标记：显示编号（1, 2, 3...），最后一个景点显示"终"
-          const markerType = (index === selectedAttractions.value.length - 1) ? 'end' : (index + 1)
-          createMarker([lng, lat], attraction.name || `景点${index + 1}`, markerType)
+          const markerType = (index === orderedAttractions.value.length - 1) ? 'end' : (index + 1)
+          createMarker([lng, lat], attraction.name || `景点${index + 1}`, markerType, formatStage(attraction))
         } else {
           console.warn(`景点 ${attraction?.name || '未知'} 没有坐标信息`)
         }
@@ -739,6 +763,21 @@ const formatDuration = (seconds) => {
     return `${hours}小时${minutes}分钟`
   }
   return `${minutes}分钟`
+}
+
+const formatStage = (attraction) => {
+  if (!attraction) return ''
+  const start = attraction.stageStart
+  const end = attraction.stageEnd
+  const name = attraction.stageName
+  const timePart = start || end ? `${start ?? '?'}-${end ?? '?'}` : ''
+  if (name && timePart) {
+    return `${name} (${timePart})`
+  }
+  if (name) {
+    return name
+  }
+  return timePart
 }
 
 // 监听选中景点变化，更新地图
@@ -935,6 +974,12 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
+.item-stage {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-1);
+}
+
 .item-category {
   display: inline-block;
   font-size: var(--font-size-xs);
@@ -963,6 +1008,18 @@ onUnmounted(() => {
 .btn-remove:hover {
   background: var(--color-error);
   color: white;
+}
+
+:deep(.marker-stage) {
+  margin-top: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 0 4px;
+  font-size: 10px;
+  color: #c62828;
+  text-align: center;
+  border: 1px solid rgba(198, 40, 40, 0.2);
+  white-space: nowrap;
 }
 
 /* 卡片操作 */

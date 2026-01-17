@@ -68,6 +68,7 @@
 import { ref, onMounted } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import AttractionCard from '../components/AttractionCard.vue'
+import { getCurrentLocation } from '../services/routeService'
 import { getRecommendations, searchAttractions, recordBrowse } from '../services/recommendService.js'
 
 const searchKeyword = ref('')
@@ -78,6 +79,8 @@ const currentPage = ref(1)
 const pageSize = ref(6)
 const total = ref(0)
 const totalPages = ref(1)
+const userLocation = ref({ longitude: null, latitude: null })
+const visitTime = ref('')
 
 const categories = [
   { id: null, name: '全部' },
@@ -110,7 +113,10 @@ const loadAttractions = async (page = 1) => {
         category: selectedCategory.value,
         page,
         pageSize: pageSize.value,
-        userId: user.value?.id
+        userId: user.value?.id,
+        userLongitude: userLocation.value.longitude,
+        userLatitude: userLocation.value.latitude,
+        visitTime: visitTime.value
       })
     }
     
@@ -157,7 +163,18 @@ const goToPage = (page) => {
 }
 
 onMounted(() => {
-  loadAttractions(1)
+  visitTime.value = new Date().toISOString()
+  getCurrentLocation()
+    .then(location => {
+      userLocation.value = {
+        longitude: location.longitude,
+        latitude: location.latitude
+      }
+      loadAttractions(1)
+    })
+    .catch(() => {
+      loadAttractions(1)
+    })
 })
 </script>
 
