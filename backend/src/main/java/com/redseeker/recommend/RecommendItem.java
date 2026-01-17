@@ -16,6 +16,8 @@ public class RecommendItem {
   private Double averageRating; // Average rating from database
   private Integer totalRatings; // Total number of ratings
   private Integer heatScore; // Heat score based on browse count
+  private Double longitude; // Longitude coordinate
+  private Double latitude; // Latitude coordinate
 
   public RecommendItem() {
   }
@@ -33,6 +35,14 @@ public class RecommendItem {
   public RecommendItem(String id, String name, String category, List<String> tags, double score, String history, String reason,
                        String address, String businessHours, Double perCapitaConsumption,
                        Double averageRating, Integer totalRatings, Integer heatScore) {
+    this(id, name, category, tags, score, history, reason, address, businessHours, perCapitaConsumption,
+         averageRating, totalRatings, heatScore, null, null);
+  }
+
+  public RecommendItem(String id, String name, String category, List<String> tags, double score, String history, String reason,
+                       String address, String businessHours, Double perCapitaConsumption,
+                       Double averageRating, Integer totalRatings, Integer heatScore,
+                       Double longitude, Double latitude) {
     this.id = id;
     this.name = name;
     this.category = category;
@@ -46,6 +56,8 @@ public class RecommendItem {
     this.averageRating = averageRating;
     this.totalRatings = totalRatings;
     this.heatScore = heatScore;
+    this.longitude = longitude;
+    this.latitude = latitude;
   }
 
   public String getId() {
@@ -150,5 +162,21 @@ public class RecommendItem {
 
   public void setHeatScore(Integer heatScore) {
     this.heatScore = heatScore;
+  }
+
+  public Double getLongitude() {
+    return longitude;
+  }
+
+  public void setLongitude(Double longitude) {
+    this.longitude = longitude;
+  }
+
+  public Double getLatitude() {
+    return latitude;
+  }
+
+  public void setLatitude(Double latitude) {
+    this.latitude = latitude;
   }
 }

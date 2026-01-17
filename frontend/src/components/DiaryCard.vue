@@ -1,5 +1,8 @@
 <template>
-  <div class="diary-card" @click="$emit('click')">
+  <div class="diary-card" @click="handleCardClick">
+    <div v-if="canDelete" class="card-delete" @click.stop="handleDelete">
+      🗑️
+    </div>
     <div v-if="diary.cover_image" class="card-cover">
       <img :src="diary.cover_image" :alt="diary.title" />
     </div>
@@ -39,14 +42,44 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+import { useAuth } from '../composables/useAuth'
+import { deleteDiary } from '../services/diaryService'
+
+const props = defineProps({
   diary: {
     type: Object,
     required: true
   }
 })
 
-defineEmits(['click'])
+const emit = defineEmits(['click', 'deleted'])
+
+const { user } = useAuth()
+
+// 判断当前用户是否可以删除此日记
+const canDelete = computed(() => {
+  return user.value && user.value.id === props.diary.author?.id
+})
+
+const handleCardClick = () => {
+  emit('click')
+}
+
+const handleDelete = async (e) => {
+  e.stopPropagation()
+  if (!confirm('确定要删除这篇日记吗？此操作不可恢复。')) {
+    return
+  }
+  
+  try {
+    await deleteDiary(props.diary.id)
+    emit('deleted', props.diary.id)
+  } catch (error) {
+    console.error('删除日记失败:', error)
+    alert('删除失败，请稍后重试')
+  }
+}
 
 const getExcerpt = (content) => {
   if (!content) return '暂无内容'
@@ -189,5 +222,27 @@ const formatDate = (dateString) => {
   font-size: 12px;
   font-weight: bold;
   z-index: 1;
+}
+
+.card-delete {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+  transition: all 0.2s ease;
+}
+
+.card-delete:hover {
+  background: rgba(220, 38, 38, 0.8);
+  transform: scale(1.1);
 }
 </style>

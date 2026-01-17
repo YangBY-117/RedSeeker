@@ -99,7 +99,9 @@ public class RecommendServiceImpl implements RecommendService {
               attraction.getPerCapitaConsumption(),
               avgRating,
               totalRatings,
-              browseCount));
+              browseCount,
+              attraction.getLongitude(),
+              attraction.getLatitude()));
     }
 
     // Sort by score from high to low (descending)
@@ -135,7 +137,7 @@ public class RecommendServiceImpl implements RecommendService {
 
   private List<AttractionRecord> loadAttractions(String city) {
     String baseSql =
-        "SELECT id, name, address, category, brief_intro, historical_background, business_hours, per_capita_consumption "
+        "SELECT id, name, address, category, brief_intro, historical_background, business_hours, per_capita_consumption, longitude, latitude "
             + "FROM attractions";
     boolean filterCity = city != null && !city.isBlank();
     String sql = baseSql;
@@ -162,7 +164,9 @@ public class RecommendServiceImpl implements RecommendService {
                   resultSet.getString("brief_intro"),
                   resultSet.getString("historical_background"),
                   resultSet.getString("business_hours"),
-                  resultSet.getDouble("per_capita_consumption")));
+                  resultSet.getDouble("per_capita_consumption"),
+                  resultSet.getObject("longitude", Double.class),
+                  resultSet.getObject("latitude", Double.class)));
         }
       }
     } catch (SQLException ex) {
@@ -470,6 +474,8 @@ public class RecommendServiceImpl implements RecommendService {
     private final String history;
     private final String businessHours;
     private final Double perCapitaConsumption;
+    private final Double longitude;
+    private final Double latitude;
 
     private AttractionRecord(
         String id,
@@ -479,7 +485,9 @@ public class RecommendServiceImpl implements RecommendService {
         String briefIntro,
         String history,
         String businessHours,
-        Double perCapitaConsumption) {
+        Double perCapitaConsumption,
+        Double longitude,
+        Double latitude) {
       this.id = id;
       this.name = name;
       this.address = address;
@@ -488,6 +496,8 @@ public class RecommendServiceImpl implements RecommendService {
       this.history = history;
       this.businessHours = businessHours;
       this.perCapitaConsumption = perCapitaConsumption;
+      this.longitude = longitude;
+      this.latitude = latitude;
     }
 
     private String getId() {
@@ -522,6 +532,14 @@ public class RecommendServiceImpl implements RecommendService {
         return briefIntro;
       }
       return address;
+    }
+
+    private Double getLongitude() {
+      return longitude;
+    }
+
+    private Double getLatitude() {
+      return latitude;
     }
   }
 }

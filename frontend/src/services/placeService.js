@@ -18,26 +18,65 @@ import { api } from './api'
  */
 export async function searchNearbyPlaces(params) {
   try {
+    // 清理参数，移除空字符串
+    const cleanParams = {
+      longitude: params.longitude,
+      latitude: params.latitude,
+      keywords: params.keywords && params.keywords.trim() ? params.keywords.trim() : null,
+      types: params.types && params.types.trim() ? params.types.trim() : null,
+      radius: params.radius || 3000,
+      page: params.page || 1,
+      pageSize: params.pageSize || 20
+    }
+    
+    console.log('搜索参数:', cleanParams)
+    
     // 直接请求后端自定义接口
-    const response = await api.post('/place/around', params)
+    const response = await api.post('/place/around', cleanParams)
+    
+    console.log('后端原始响应:', response.data)
+    
+    // 检查响应格式 - 后端返回的是 ApiResponse 格式: { success: true, data: {...}, message: "OK" }
+    // 而 data 里面又包含了 { success: true, data: {...} }
+    let result = response.data
+    
+    // 如果 response.data.data 存在且是对象，说明是嵌套的 ApiResponse
+    if (result.data && typeof result.data === 'object' && result.data.success !== undefined) {
+      // 解包嵌套的 data
+      result = result.data
+      console.log('解包后的数据:', result)
+    }
     
     // 检查响应格式
-    if (response.data && response.data.success !== undefined) {
+    if (result && result.success !== undefined) {
       // 后端返回格式: { success: true, data: {...} }
-      return response.data
-    } else if (response.data && response.data.data) {
+      const placesCount = result.data?.places?.length || 0
+      console.log('搜索结果:', placesCount, '个场所')
+      if (placesCount > 0) {
+        console.log('前3个场所示例:', result.data.places.slice(0, 3))
+      }
+      return result
+    } else if (result && result.data) {
       // 如果已经是 ApiResponse 格式
-      return response.data
+      return result
     } else {
       // 兼容其他格式
       return {
         success: true,
-        data: response.data
+        data: result
       }
     }
   } catch (error) {
     console.error('搜索周边场所失败:', error)
-    throw error
+    // 如果API调用失败，返回一个友好的错误信息
+    if (error.response) {
+      const errorMsg = error.response.data?.message || error.response.data?.data?.message || '搜索失败'
+      throw new Error(errorMsg)
+    } else if (error.message) {
+      throw error
+    } else {
+      throw new Error('网络错误，请检查网络连接')
+    }
   }
 }
 

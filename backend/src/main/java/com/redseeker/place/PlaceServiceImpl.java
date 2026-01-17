@@ -39,16 +39,32 @@ public class PlaceServiceImpl implements PlaceService {
   public Map<String, Object> searchNearbyPlaces(PlaceAroundRequest req) {
     Map<String, Object> result = new HashMap<>();
     try {
-      String url = "https://restapi.amap.com/v3/place/around?" + buildQuery(Map.of(
-        "key", amapKey,
-        "location", req.getLongitude() + "," + req.getLatitude(),
-        "keywords", req.getKeywords() == null ? "" : req.getKeywords(),
-        "types", req.getTypes() == null ? "" : req.getTypes(),
-        "radius", req.getRadius() == null ? "3000" : req.getRadius().toString(),
-        "page", req.getPage() == null ? "1" : req.getPage().toString(),
-        "offset", req.getPageSize() == null ? "20" : req.getPageSize().toString(),
-        "extensions", "all"
-      ));
+      // 构建查询参数
+      Map<String, String> queryParams = new LinkedHashMap<>();
+      queryParams.put("key", amapKey);
+      queryParams.put("location", req.getLongitude() + "," + req.getLatitude());
+      
+      // 只有当keywords不为空时才添加
+      if (req.getKeywords() != null && !req.getKeywords().trim().isEmpty()) {
+        queryParams.put("keywords", req.getKeywords().trim());
+      }
+      
+      // 只有当types不为空时才添加
+      if (req.getTypes() != null && !req.getTypes().trim().isEmpty()) {
+        queryParams.put("types", req.getTypes().trim());
+      }
+      
+      queryParams.put("radius", req.getRadius() == null ? "3000" : req.getRadius().toString());
+      queryParams.put("page", req.getPage() == null ? "1" : req.getPage().toString());
+      queryParams.put("offset", req.getPageSize() == null ? "20" : req.getPageSize().toString());
+      queryParams.put("extensions", "all");
+      
+      String url = "https://restapi.amap.com/v3/place/around?" + buildQuery(queryParams);
+      LOGGER.info("高德API请求: location=({},{}), keywords={}, types={}, radius={}", 
+          req.getLongitude(), req.getLatitude(), 
+          req.getKeywords() != null ? req.getKeywords() : "", 
+          req.getTypes() != null ? req.getTypes() : "",
+          req.getRadius() != null ? req.getRadius() : 3000);
       HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       if (response.statusCode() != 200) {
@@ -56,11 +72,14 @@ public class PlaceServiceImpl implements PlaceService {
         result.put("message", "AMap API error: " + response.statusCode());
         return result;
       }
-      JsonNode root = objectMapper.readTree(response.body());
+      String responseBody = response.body();
+      LOGGER.debug("高德API响应: {}", responseBody);
+      JsonNode root = objectMapper.readTree(responseBody);
       String status = root.path("status").asText();
       if (!"1".equals(status)) {
         String info = root.path("info").asText();
-        LOGGER.warn("高德API返回错误: status={}, info={}", status, info);
+        String count = root.path("count").asText();
+        LOGGER.warn("高德API返回错误: status={}, info={}, count={}", status, info, count);
         result.put("success", false);
         result.put("message", info.isEmpty() ? "高德API调用失败" : info);
         return result;
@@ -68,12 +87,15 @@ public class PlaceServiceImpl implements PlaceService {
       // 转换 POI 列表
       List<Map<String, Object>> places = new ArrayList<>();
       JsonNode poisNode = root.path("pois");
+      int totalCount = root.path("count").asInt(0);
+      LOGGER.info("高德API返回: status={}, count={}, pois节点类型={}", status, totalCount, poisNode.getNodeType());
+      
       if (!poisNode.isArray()) {
-        LOGGER.warn("高德API返回的pois不是数组");
+        LOGGER.warn("高德API返回的pois不是数组，节点类型: {}", poisNode.getNodeType());
         result.put("success", true);
         Map<String, Object> data = new HashMap<>();
         data.put("places", places);
-        data.put("total", 0);
+        data.put("total", totalCount);
         data.put("page", req.getPage() == null ? 1 : req.getPage());
         data.put("pageSize", req.getPageSize() == null ? 20 : req.getPageSize());
         data.put("totalPages", 0);
@@ -85,12 +107,19 @@ public class PlaceServiceImpl implements PlaceService {
         place.put("id", poi.path("id").asText());
         place.put("name", poi.path("name").asText());
         place.put("address", poi.path("address").asText(""));
-        String[] loc = poi.path("location").asText().split(",");
-        if (loc.length == 2) {
-          Map<String, Object> locObj = new HashMap<>();
-          locObj.put("longitude", Double.parseDouble(loc[0]));
-          locObj.put("latitude", Double.parseDouble(loc[1]));
-          place.put("location", locObj);
+        String locationStr = poi.path("location").asText();
+        if (!locationStr.isEmpty()) {
+          String[] loc = locationStr.split(",");
+          if (loc.length == 2) {
+            try {
+              Map<String, Object> locObj = new HashMap<>();
+              locObj.put("longitude", Double.parseDouble(loc[0]));
+              locObj.put("latitude", Double.parseDouble(loc[1]));
+              place.put("location", locObj);
+            } catch (NumberFormatException e) {
+              LOGGER.warn("解析坐标失败: {}", locationStr);
+            }
+          }
         }
         place.put("distance", poi.path("distance").asInt(0));
         place.put("type", poi.path("type").asText(""));
@@ -98,13 +127,21 @@ public class PlaceServiceImpl implements PlaceService {
         place.put("business_area", poi.path("business_area").asText(""));
         places.add(place);
       }
+      
+      LOGGER.info("高德API搜索完成，位置: ({}, {}), 关键词: {}, 类型: {}, 找到 {} 个结果", 
+          req.getLongitude(), req.getLatitude(), req.getKeywords(), req.getTypes(), places.size());
+      
       result.put("success", true);
       Map<String, Object> data = new HashMap<>();
       data.put("places", places);
-      data.put("total", root.path("count").asInt(places.size()));
+      int total = root.path("count").asInt(places.size());
+      if (total == 0 && !places.isEmpty()) {
+        total = places.size();
+      }
+      data.put("total", total);
       data.put("page", req.getPage() == null ? 1 : req.getPage());
       data.put("pageSize", req.getPageSize() == null ? 20 : req.getPageSize());
-      data.put("totalPages", (int)Math.ceil((root.path("count").asDouble(places.size())) / (req.getPageSize() == null ? 20.0 : req.getPageSize())));
+      data.put("totalPages", (int)Math.ceil((double)total / (req.getPageSize() == null ? 20.0 : req.getPageSize())));
       result.put("data", data);
     } catch (Exception ex) {
       LOGGER.error("搜索周边场所失败", ex);

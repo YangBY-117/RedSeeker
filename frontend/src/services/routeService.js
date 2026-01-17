@@ -9,12 +9,24 @@ import { api } from './api'
  * @returns {Promise<Object>} 当前位置信息 {longitude, latitude, address}
  */
 export async function getCurrentLocation() {
+  // 优先使用浏览器定位API获取真实位置
   try {
-    const response = await api.get('/route/current-location')
-    return response.data.data
+    return await getBrowserLocation()
   } catch (error) {
-    // 如果后端接口未实现，使用浏览器定位API
-    return getBrowserLocation()
+    console.warn('浏览器定位失败，尝试后端接口:', error.message)
+    // 如果浏览器定位失败，尝试后端接口
+    try {
+      const response = await api.get('/route/current-location')
+      return response.data.data
+    } catch (backendError) {
+      // 如果后端也失败，使用默认位置（北京邮电大学西土城校区）
+      console.warn('后端获取位置也失败，使用默认位置:', backendError.message)
+      return {
+        longitude: 116.3574,
+        latitude: 39.9612,
+        address: '北京邮电大学西土城校区（默认位置）'
+      }
+    }
   }
 }
 
@@ -31,10 +43,10 @@ function getBrowserLocation() {
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        const { longitude, latitude } = {
-          longitude: position.coords.longitude,
-          latitude: position.coords.latitude
-        }
+        const longitude = position.coords.longitude
+        const latitude = position.coords.latitude
+        
+        console.log('浏览器定位成功:', { longitude, latitude })
         
         // 尝试通过逆地理编码获取地址（可选）
         const address = await reverseGeocode(longitude, latitude).catch(() => null)
@@ -42,16 +54,27 @@ function getBrowserLocation() {
         resolve({
           longitude,
           latitude,
-          address: address || `经度: ${longitude}, 纬度: ${latitude}`
+          address: address || `当前位置（经度: ${longitude.toFixed(6)}, 纬度: ${latitude.toFixed(6)}）`
         })
       },
       (error) => {
-        reject(new Error('获取位置失败：' + error.message))
+        // 提供更友好的错误信息
+        let errorMsg = '获取位置失败'
+        if (error.code === 1) {
+          errorMsg = '用户拒绝了位置请求，请在浏览器设置中允许位置访问'
+        } else if (error.code === 2) {
+          errorMsg = '位置信息不可用'
+        } else if (error.code === 3) {
+          errorMsg = '获取位置超时'
+        } else {
+          errorMsg = '获取位置失败：' + error.message
+        }
+        reject(new Error(errorMsg))
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
+        timeout: 15000,
+        maximumAge: 60000 // 允许使用1分钟内的缓存位置
       }
     )
   })

@@ -75,6 +75,7 @@
           :key="diary.id"
           :diary="diary"
           @click="viewDiary(diary.id)"
+          @deleted="handleDiaryDeleted"
         />
       </div>
     </div>
@@ -251,10 +252,14 @@ const handleCreateDiary = () => {
   showCreateModal.value = true
 }
 
-// 日记创建成功
+// 处理日记创建成功
 const handleDiaryCreated = () => {
+  // 关闭弹窗
   showCreateModal.value = false
-  loadDiaries(1)
+  // 刷新列表（延迟一下确保后端已保存）
+  setTimeout(() => {
+    loadDiaries(currentPage.value)
+  }, 500)
 }
 
 // 监听打开创建日记事件（从用户中心跳转过来时）

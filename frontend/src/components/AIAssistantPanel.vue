@@ -127,15 +127,37 @@
               {{ getStatusText(videoStatus) }}
             </span>
           </div>
-          <div v-if="videoStatus === 'processing'" class="progress-info">
+          <div v-if="videoStatus === 'processing' || videoStatus === 'pending' || videoStatus === 'running' || videoStatus === 'waiting'" class="progress-info">
             <div class="progress-bar">
               <div class="progress-fill" :style="{ width: '60%' }"></div>
             </div>
-            <p class="progress-text">正在生成动画，请稍候...</p>
+            <p class="progress-text">正在生成动画，请稍候...（通常需要1-5分钟）</p>
+            <p class="progress-text" style="font-size: 12px; color: #666;">任务ID: {{ videoTaskId }}</p>
           </div>
-          <div v-if="videoStatus === 'completed' && videoUrl" class="video-result">
-            <video :src="videoUrl" controls></video>
-            <button class="btn btn-primary" @click="handleUseVideo">使用此视频</button>
+          <div v-if="videoStatus === 'completed' || videoStatus === 'succeeded'" class="video-result">
+            <video v-if="videoUrl" :src="videoUrl" controls></video>
+            <button v-if="videoUrl" class="btn btn-primary" @click="handleUseVideo">使用此视频</button>
+            <p v-else style="color: #666;">视频生成完成，正在加载...</p>
+          </div>
+          <div v-if="videoStatus === 'failed' || videoStatus === 'error'" class="error-info">
+            <p style="color: #c33;">动画生成失败，请重试</p>
+          </div>
+        </div>
+        <!-- 历史视频 -->
+        <div v-if="savedVideos.length > 0" class="history-section">
+          <div class="result-header">
+            <span>历史生成的视频（{{ savedVideos.length }}）</span>
+          </div>
+          <div class="history-videos">
+            <div
+              v-for="(video, index) in savedVideos"
+              :key="index"
+              class="history-video-item"
+              @click="videoUrl = video; handleUseVideo()"
+            >
+              <video :src="video" preload="metadata"></video>
+              <div class="video-overlay">点击使用</div>
+            </div>
           </div>
         </div>
       </div>
@@ -144,7 +166,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { generateDiaryContent, generateImageFromText, generateAnimationFromImages } from '../services/aiService'
 
 const props = defineProps({
@@ -172,6 +194,7 @@ const generatedContent = ref('')
 const imagePrompt = ref('')
 const generatingImage = ref(false)
 const generatedImageUrl = ref('')
+const savedImages = ref([]) // 保存的历史图片
 
 // 图生动画相关
 const videoDescription = ref('')
@@ -179,6 +202,39 @@ const generatingVideo = ref(false)
 const videoTaskId = ref('')
 const videoStatus = ref('')
 const videoUrl = ref('')
+const savedVideos = ref([]) // 保存的历史视频
+
+// 从localStorage加载保存的AI生成内容
+const loadSavedAIContent = () => {
+  try {
+    const saved = localStorage.getItem('ai_generated_content')
+    if (saved) {
+      const data = JSON.parse(saved)
+      savedImages.value = data.images || []
+      savedVideos.value = data.videos || []
+    }
+  } catch (e) {
+    console.warn('加载保存的AI内容失败:', e)
+  }
+}
+
+// 保存AI生成的内容到localStorage
+const saveAIContent = () => {
+  try {
+    const data = {
+      images: savedImages.value,
+      videos: savedVideos.value,
+      lastUpdate: new Date().toISOString()
+    }
+    localStorage.setItem('ai_generated_content', JSON.stringify(data))
+  } catch (e) {
+    console.warn('保存AI内容失败:', e)
+  }
+}
+
+onMounted(() => {
+  loadSavedAIContent()
+})
 
 // 关闭面板
 const close = () => {
@@ -201,7 +257,11 @@ const handleGenerateDiary = async () => {
       destination: '',
       travel_date: ''
     })
-    generatedContent.value = result.content
+    generatedContent.value = result.content || result
+    // 如果返回了标题，也可以使用
+    if (result.title) {
+      // 可以emit给父组件使用标题
+    }
   } catch (error) {
     console.error('生成日记内容失败:', error)
     alert(error.response?.data?.message || '生成失败，请稍后重试')
@@ -224,10 +284,25 @@ const handleGenerateImage = async () => {
     const result = await generateImageFromText({
       prompt: imagePrompt.value
     })
-    generatedImageUrl.value = result.image_url
+    console.log('文生图结果:', result)
+    generatedImageUrl.value = result.imageUrl || result.image_url || result.url
+    if (!generatedImageUrl.value) {
+      throw new Error('生成的图片URL为空')
+    }
+    
+    // 保存到历史记录
+    if (generatedImageUrl.value && !savedImages.value.includes(generatedImageUrl.value)) {
+      savedImages.value.unshift(generatedImageUrl.value)
+      // 只保留最近20张
+      if (savedImages.value.length > 20) {
+        savedImages.value = savedImages.value.slice(0, 20)
+      }
+      saveAIContent()
+    }
   } catch (error) {
     console.error('生成图片失败:', error)
-    alert(error.response?.data?.message || '生成失败，请稍后重试')
+    const errorMsg = error.response?.data?.message || error.response?.data?.data?.message || error.message || '生成失败，请稍后重试'
+    alert('文生图失败：' + errorMsg)
   } finally {
     generatingImage.value = false
   }
@@ -267,19 +342,29 @@ const handleGenerateVideo = async () => {
       images: imageData,
       description: videoDescription.value
     })
+    
+    console.log('图生动画结果:', result)
 
-    videoTaskId.value = result.task_id
-    videoStatus.value = result.status
+    videoTaskId.value = result.taskId || result.task_id
+    const initialStatus = result.status || 'pending'
+    videoStatus.value = initialStatus
 
-    if (result.status === 'completed' && result.video_url) {
-      videoUrl.value = result.video_url
-    } else if (result.status === 'processing') {
+    // 如果已经是完成状态且有视频URL
+    if ((initialStatus === 'completed' || initialStatus === 'succeeded') && (result.videoUrl || result.video_url)) {
+      videoUrl.value = result.videoUrl || result.video_url
+      videoStatus.value = 'completed'
+    } else if (initialStatus === 'pending' || initialStatus === 'running' || initialStatus === 'processing' || !initialStatus) {
       // 开始轮询状态
-      checkVideoStatus()
+      if (videoTaskId.value) {
+        checkVideoStatus()
+      } else {
+        throw new Error('无法获取任务ID')
+      }
     }
   } catch (error) {
     console.error('生成动画失败:', error)
-    alert(error.response?.data?.message || '生成失败，请稍后重试')
+    const errorMsg = error.response?.data?.message || error.response?.data?.data?.message || error.message || '生成失败，请稍后重试'
+    alert('图生动画失败：' + errorMsg)
   } finally {
     generatingVideo.value = false
   }
@@ -292,17 +377,46 @@ const checkVideoStatus = async () => {
   try {
     const { getAnimationStatus } = await import('../services/diaryService')
     const result = await getAnimationStatus(videoTaskId.value)
-    videoStatus.value = result.status
+    console.log('动画状态查询结果:', result)
+    
+    // 状态可能是：pending, running, succeeded, failed, unknown
+    videoStatus.value = result.status || result.taskStatus || 'unknown'
 
-    if (result.status === 'completed' && result.video_url) {
-      videoUrl.value = result.video_url
-    } else if (result.status === 'processing' || result.status === 'waiting') {
+    if (result.status === 'succeeded' || result.status === 'completed') {
+      videoUrl.value = result.videoUrl || result.video_url
+      videoStatus.value = 'completed'
+      console.log('动画生成完成:', videoUrl.value)
+      
+      // 保存到历史记录
+      if (videoUrl.value && !savedVideos.value.includes(videoUrl.value)) {
+        savedVideos.value.unshift(videoUrl.value)
+        // 只保留最近10个
+        if (savedVideos.value.length > 10) {
+          savedVideos.value = savedVideos.value.slice(0, 10)
+        }
+        saveAIContent()
+      }
+    } else if (result.status === 'failed' || result.status === 'error') {
+      videoStatus.value = 'failed'
+      console.error('动画生成失败')
+    } else if (result.status === 'pending' || result.status === 'running' || result.status === 'processing' || result.status === 'waiting') {
+      // 继续轮询，间隔15秒（根据API文档建议）
       setTimeout(() => {
         checkVideoStatus()
-      }, 3000)
+      }, 15000)
+    } else {
+      // 未知状态，也继续轮询
+      console.warn('未知状态，继续轮询:', result.status)
+      setTimeout(() => {
+        checkVideoStatus()
+      }, 15000)
     }
   } catch (error) {
     console.error('查询动画状态失败:', error)
+    // 出错后也继续轮询，可能是临时网络问题
+    setTimeout(() => {
+      checkVideoStatus()
+    }, 15000)
   }
 }
 
@@ -348,8 +462,13 @@ const getImagePreview = (img) => {
 const getStatusClass = (status) => {
   const statusMap = {
     'processing': 'status-processing',
+    'pending': 'status-processing',
+    'running': 'status-processing',
+    'waiting': 'status-processing',
     'completed': 'status-completed',
-    'failed': 'status-failed'
+    'succeeded': 'status-completed',
+    'failed': 'status-failed',
+    'error': 'status-failed'
   }
   return statusMap[status] || ''
 }
@@ -358,10 +477,16 @@ const getStatusClass = (status) => {
 const getStatusText = (status) => {
   const statusMap = {
     'processing': '生成中',
+    'pending': '排队中',
+    'running': '处理中',
+    'waiting': '等待中',
     'completed': '已完成',
-    'failed': '生成失败'
+    'succeeded': '已完成',
+    'failed': '生成失败',
+    'error': '生成失败',
+    'unknown': '未知状态'
   }
-  return statusMap[status] || '未知'
+  return statusMap[status] || status || '未知'
 }
 
 // 监听生成的内容，自动使用

@@ -49,11 +49,12 @@
               <option
                 v-for="attraction in attractionsList"
                 :key="attraction.id"
-                :value="attraction.id"
+                :value="String(attraction.id)"
               >
-                {{ attraction.name }}
+                {{ attraction.name }} {{ attraction.longitude && attraction.latitude ? '✓' : '(无坐标)' }}
               </option>
             </select>
+            <p v-if="attractionsList.length === 0" class="form-hint">景点列表加载中或后端服务未启动</p>
           </div>
 
           <!-- 搜索关键词 -->
@@ -62,26 +63,11 @@
             <input
               v-model="searchKeyword"
               type="text"
-              placeholder="如：超市、卫生间、餐厅"
+              placeholder="如：超市、卫生间、餐厅、银行"
               class="form-input"
               @keyup.enter="handleSearch"
             />
-          </div>
-
-          <!-- 类别筛选 -->
-          <div class="form-group">
-            <label class="form-label">设施类别</label>
-            <div class="category-grid">
-              <button
-                v-for="type in placeTypes"
-                :key="type.value"
-                :class="['category-btn', { active: selectedType === type.value }]"
-                @click="selectedType = type.value"
-              >
-                <span class="category-icon">{{ type.icon }}</span>
-                <span class="category-label">{{ type.label }}</span>
-              </button>
-            </div>
+            <p class="form-hint">输入要搜索的场所名称或类型</p>
           </div>
 
           <!-- 搜索半径 -->
@@ -184,7 +170,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { searchNearbyPlaces, getRealDistanceAndSort, getCommonPlaceTypes, getTypeByKeyword } from '../services/placeService'
+import { searchNearbyPlaces, getRealDistanceAndSort } from '../services/placeService'
 import { getCurrentLocation } from '../services/routeService'
 import { getRecommendations } from '../services/recommendService.js'
 
@@ -207,7 +193,6 @@ const attractionsList = ref([])
 
 // 搜索相关
 const searchKeyword = ref('')
-const selectedType = ref('')
 const searchRadius = ref(3000) // 默认3km
 const radiusOptions = [1000, 2000, 3000, 5000, 10000] // 1km, 2km, 3km, 5km, 10km
 const searching = ref(false)
@@ -219,13 +204,10 @@ const selectedPlaceIndex = ref(-1)
 const sortBy = ref('straight') // 'straight' | 'real'
 const sortingRealDistance = ref(false)
 
-// 设施类别
-const placeTypes = getCommonPlaceTypes()
-
 // 计算属性
 const canSearch = computed(() => {
   return selectedLocation.value.longitude && selectedLocation.value.latitude && 
-         (searchKeyword.value.trim() || selectedType.value)
+         searchKeyword.value.trim()
 })
 
 // 初始化地图
@@ -235,10 +217,10 @@ const initMap = () => {
     return
   }
 
-  // 默认中心点（上海）
+  // 默认中心点（北京邮电大学西土城校区）
   const center = selectedLocation.value.longitude && selectedLocation.value.latitude
     ? [selectedLocation.value.longitude, selectedLocation.value.latitude]
-    : [121.4737, 31.2208]
+    : [116.3574, 39.9612]
 
   map = new AMap.Map(mapContainer.value, {
     zoom: 15,
@@ -334,7 +316,15 @@ const handleUseCurrentLocation = async () => {
     }
   } catch (error) {
     console.error('获取当前位置失败:', error)
-    alert('获取当前位置失败：' + error.message)
+    // 使用默认位置（北京邮电大学西土城校区）
+    selectedLocation.value = {
+      longitude: 116.3574,
+      latitude: 39.9612,
+      address: '北京邮电大学西土城校区（默认位置）'
+    }
+    if (map) {
+      map.setCenter([116.3574, 39.9612])
+    }
   } finally {
     gettingLocation.value = false
   }
@@ -347,9 +337,26 @@ const loadAttractions = async () => {
       page: 1,
       pageSize: 100
     })
-    attractionsList.value = result.data.attractions || []
+    attractionsList.value = result.data?.attractions || []
+    console.log('加载景点列表成功，共', attractionsList.value.length, '个景点')
+    
+    // 打印前几个景点的ID信息，便于调试
+    if (attractionsList.value.length > 0) {
+      console.log('前5个景点ID示例:', attractionsList.value.slice(0, 5).map(a => ({
+        id: a.id,
+        idType: typeof a.id,
+        name: a.name,
+        hasCoords: !!(a.longitude && a.latitude)
+      })))
+    }
   } catch (error) {
-    console.error('加载景点列表失败:', error)
+    console.warn('加载景点列表失败:', error.message)
+    // 不显示错误提示，允许用户继续使用
+    attractionsList.value = []
+    // 如果后端未启动，提示用户
+    if (error.message && (error.message.includes('Network Error') || error.message.includes('ERR_CONNECTION_REFUSED'))) {
+      console.warn('后端服务可能未启动，景点选择功能将不可用')
+    }
   }
 }
 
@@ -357,22 +364,54 @@ const loadAttractions = async () => {
 const handleAttractionChange = () => {
   if (!selectedAttractionId.value) {
     selectedLocation.value = { longitude: null, latitude: null, address: '' }
+    showAttractionSelector.value = false
     return
   }
 
-  const attraction = attractionsList.value.find(a => a.id === parseInt(selectedAttractionId.value))
+  // 更灵活的ID匹配：支持字符串和数字类型
+  const selectedId = selectedAttractionId.value
+  const attraction = attractionsList.value.find(a => {
+    // 尝试多种匹配方式
+    const aId = a.id
+    if (aId == selectedId) return true // 使用 == 进行类型转换比较
+    if (Number(aId) === Number(selectedId)) return true
+    if (String(aId) === String(selectedId)) return true
+    return false
+  })
+  
   if (attraction) {
+    console.log('选择景点:', attraction, '选中ID:', selectedId, '景点ID:', attraction.id)
     locationMode.value = 'attraction'
+    
+    // 检查坐标是否存在
+    if (!attraction.longitude || !attraction.latitude) {
+      console.warn('景点缺少坐标信息:', attraction)
+      alert(`景点"${attraction.name}"缺少坐标信息，无法设置位置`)
+      return
+    }
+    
     selectedLocation.value = {
       longitude: attraction.longitude,
       latitude: attraction.latitude,
-      address: `${attraction.name} - ${attraction.address}`
+      address: `${attraction.name} - ${attraction.address || '地址未知'}`
     }
 
     // 更新地图中心
     if (map) {
       map.setCenter([attraction.longitude, attraction.latitude])
     }
+    
+    // 关闭选择器
+    showAttractionSelector.value = false
+  } else {
+    console.warn('未找到选中的景点', {
+      selectedId: selectedId,
+      selectedIdType: typeof selectedId,
+      attractionsCount: attractionsList.value.length,
+      attractionsIds: attractionsList.value.map(a => ({ id: a.id, type: typeof a.id, name: a.name })).slice(0, 5)
+    })
+    // 不显示alert，避免干扰用户操作
+    console.error('景点列表:', attractionsList.value)
   }
 }
 
@@ -384,17 +423,11 @@ const handleSearch = async () => {
   hasSearched.value = true
 
   try {
-    // 根据关键词获取类型代码
-    let types = selectedType.value
-    if (!types && searchKeyword.value.trim()) {
-      types = getTypeByKeyword(searchKeyword.value.trim())
-    }
-
     const result = await searchNearbyPlaces({
       longitude: selectedLocation.value.longitude,
       latitude: selectedLocation.value.latitude,
       keywords: searchKeyword.value.trim(),
-      types: types,
+      types: '', // 不再使用类型筛选
       radius: searchRadius.value,
       page: 1,
       pageSize: 50
@@ -402,20 +435,45 @@ const handleSearch = async () => {
 
     // 检查返回结果
     if (!result.success) {
-      throw new Error(result.message || '搜索失败')
+      console.error('搜索失败:', result.message)
+      places.value = []
+      // 检查是否是后端未启动
+      if (result.message && (result.message.includes('Network Error') || result.message.includes('ERR_CONNECTION_REFUSED'))) {
+        alert('无法连接到后端服务\n\n请确保：\n1. 后端服务已启动（运行在 http://localhost:8080）\n2. 检查浏览器控制台的错误信息')
+      } else {
+        alert('搜索失败：' + (result.message || '未知错误'))
+      }
+      return
     }
 
+    // 检查数据格式
+    console.log('搜索结果数据:', result)
     places.value = result.data?.places || []
+    
+    // 如果places是空数组，检查是否有数据但格式不对
+    if (places.value.length === 0 && result.data) {
+      console.warn('places为空，检查数据格式:', result.data)
+      // 尝试直接使用result.data（可能是数组格式）
+      if (Array.isArray(result.data)) {
+        places.value = result.data
+      } else if (Array.isArray(result.data.places)) {
+        places.value = result.data.places
+      }
+    }
+    
     selectedPlaceIndex.value = -1
 
     // 在地图上显示
     if (places.value.length > 0) {
+      console.log(`找到 ${places.value.length} 个场所`)
       showPlacesOnMap()
       // 按直线距离排序
       sortBy.value = 'straight'
       places.value.sort((a, b) => (a.distance || 0) - (b.distance || 0))
     } else {
-      console.log('未找到相关场所')
+      console.log('未找到相关场所，后端返回数据:', result)
+      // 显示友好提示
+      alert('未找到相关场所\n\n建议：\n1. 尝试不同的关键词（如：超市、餐厅、卫生间、银行）\n2. 扩大搜索半径\n3. 检查搜索位置是否正确')
     }
   } catch (error) {
     console.error('搜索失败:', error)
@@ -621,6 +679,12 @@ onUnmounted(() => {
   border-color: var(--color-primary);
 }
 
+.form-hint {
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
 /* 位置选择 */
 .location-selector {
   display: flex;
@@ -668,41 +732,6 @@ onUnmounted(() => {
 .location-text {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-}
-
-/* 类别网格 */
-.category-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-2);
-}
-
-.category-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  padding: var(--spacing-2) var(--spacing-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: var(--font-size-sm);
-}
-
-.category-btn:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-light);
-}
-
-.category-btn.active {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: white;
-}
-
-.category-icon {
-  font-size: var(--font-size-lg);
 }
 
 /* 半径选择 */
