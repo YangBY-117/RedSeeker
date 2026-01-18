@@ -2,23 +2,26 @@
   <div v-if="visible" class="ai-assistant-panel">
     <div class="panel-header">
       <h3 class="panel-title">🤖 AI助手</h3>
-      <button class="panel-close" @click="close">×</button>
+      <button type="button" class="panel-close" @click="close">×</button>
     </div>
 
     <div class="panel-tabs">
       <button
+        type="button"
         :class="['tab-btn', { active: activeTab === 'write' }]"
         @click="activeTab = 'write'"
       >
         ✍️ 写日记
       </button>
       <button
+        type="button"
         :class="['tab-btn', { active: activeTab === 'text2image' }]"
         @click="activeTab = 'text2image'"
       >
         🎨 文生图
       </button>
       <button
+        type="button"
         :class="['tab-btn', { active: activeTab === 'image2video' }]"
         @click="activeTab = 'image2video'"
       >
@@ -39,6 +42,7 @@
           ></textarea>
         </div>
         <button
+          type="button"
           class="btn btn-primary btn-generate"
           :disabled="generatingWrite"
           @click="handleGenerateDiary"
@@ -49,8 +53,8 @@
           <div class="result-header">
             <span>生成的内容：</span>
             <div class="result-actions">
-              <button class="btn-copy" @click="copyToClipboard(generatedContent)">复制</button>
-              <button class="btn-use" @click="handleUseContent">使用</button>
+              <button type="button" class="btn-copy" @click="copyToClipboard(generatedContent)">复制</button>
+              <button type="button" class="btn-use" @click="handleUseContent">使用</button>
             </div>
           </div>
           <div class="result-content">{{ generatedContent }}</div>
@@ -69,6 +73,7 @@
           ></textarea>
         </div>
         <button
+          type="button"
           class="btn btn-primary btn-generate"
           :disabled="generatingImage"
           @click="handleGenerateImage"
@@ -78,7 +83,7 @@
         <div v-if="generatedImageUrl" class="result-box">
           <div class="result-header">
             <span>生成的图片：</span>
-            <button class="btn-copy" @click="handleUseImage">使用此图片</button>
+            <button type="button" class="btn-copy" @click="handleUseImage">使用此图片</button>
           </div>
           <div class="image-result">
             <img :src="generatedImageUrl" alt="生成的图片" />
@@ -114,6 +119,7 @@
           ></textarea>
         </div>
         <button
+          type="button"
           class="btn btn-primary btn-generate"
           :disabled="generatingVideo || selectedImages.length === 0"
           @click="handleGenerateVideo"
@@ -136,7 +142,7 @@
           </div>
           <div v-if="videoStatus === 'completed' || videoStatus === 'succeeded'" class="video-result">
             <video v-if="videoUrl" :src="videoUrl" controls></video>
-            <button v-if="videoUrl" class="btn btn-primary" @click="handleUseVideo">使用此视频</button>
+            <button type="button" v-if="videoUrl" class="btn btn-primary" @click="handleUseVideo">使用此视频</button>
             <p v-else style="color: #666;">视频生成完成，正在加载...</p>
           </div>
           <div v-if="videoStatus === 'failed' || videoStatus === 'error'" class="error-info">
@@ -298,10 +304,13 @@ const handleGenerateImage = async () => {
       prompt: imagePrompt.value
     })
     console.log('文生图结果:', result)
-    generatedImageUrl.value = result.imageUrl || result.image_url || result.url
-    if (!generatedImageUrl.value) {
+    const imageUrl = typeof result === 'string'
+      ? result
+      : (result?.imageUrl || result?.image_url || result?.url)
+    if (!imageUrl) {
       throw new Error('生成的图片URL为空')
     }
+    generatedImageUrl.value = imageUrl
     
     // 保存到历史记录
     if (generatedImageUrl.value && !savedImages.value.includes(generatedImageUrl.value)) {
@@ -336,7 +345,7 @@ const handleGenerateVideo = async () => {
   try {
     // 将图片转换为base64或URL
     // 如果是File对象，需要转换为base64或先上传到服务器
-    const imageData = await Promise.all(
+    const imageData = (await Promise.all(
       props.selectedImages.map(async (img) => {
         if (img instanceof File) {
           // 转换为base64
@@ -347,9 +356,13 @@ const handleGenerateVideo = async () => {
             reader.readAsDataURL(img)
           })
         }
-        return img
+        return typeof img === 'string' ? img : ''
       })
-    )
+    )).filter((img) => typeof img === 'string' && img.trim().length > 0)
+
+    if (imageData.length === 0) {
+      throw new Error('未获取到有效图片数据')
+    }
 
     const result = await generateAnimationFromImages({
       images: imageData,
@@ -358,8 +371,12 @@ const handleGenerateVideo = async () => {
     
     console.log('图生动画结果:', result)
 
+    if (!result || typeof result !== 'object') {
+      throw new Error('图生动画接口返回为空')
+    }
+
     videoTaskId.value = result.taskId || result.task_id
-    const initialStatus = result.status || 'pending'
+    const initialStatus = (result.status || result.taskStatus || 'pending').toLowerCase()
     videoStatus.value = initialStatus
 
     // 如果已经是完成状态且有视频URL
@@ -393,9 +410,16 @@ const checkVideoStatus = async () => {
     console.log('动画状态查询结果:', result)
     
     // 状态可能是：pending, running, succeeded, failed, unknown
-    videoStatus.value = result.status || result.taskStatus || 'unknown'
+    if (!result || typeof result !== 'object') {
+      videoStatus.value = 'failed'
+      console.error('动画状态接口返回异常')
+      return
+    }
 
-    if (result.status === 'succeeded' || result.status === 'completed') {
+    const status = (result.status || result.taskStatus || 'unknown').toLowerCase()
+    videoStatus.value = status
+
+    if (status === 'succeeded' || status === 'completed') {
       videoUrl.value = result.videoUrl || result.video_url
       videoStatus.value = 'completed'
       console.log('动画生成完成:', videoUrl.value)
@@ -409,17 +433,17 @@ const checkVideoStatus = async () => {
         }
         saveAIContent()
       }
-    } else if (result.status === 'failed' || result.status === 'error') {
+    } else if (status === 'failed' || status === 'error') {
       videoStatus.value = 'failed'
       console.error('动画生成失败')
-    } else if (result.status === 'pending' || result.status === 'running' || result.status === 'processing' || result.status === 'waiting') {
+    } else if (status === 'pending' || status === 'running' || status === 'processing' || status === 'waiting') {
       // 继续轮询，间隔15秒（根据API文档建议）
       setTimeout(() => {
         checkVideoStatus()
       }, 15000)
     } else {
       // 未知状态，也继续轮询
-      console.warn('未知状态，继续轮询:', result.status)
+      console.warn('未知状态，继续轮询:', status)
       setTimeout(() => {
         checkVideoStatus()
       }, 15000)

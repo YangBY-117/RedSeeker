@@ -22,6 +22,10 @@ public class DiaryCreateRequest {
 
   private List<MultipartFile> videos = new ArrayList<>();
 
+  private List<String> imageUrls = new ArrayList<>();
+
+  private List<String> videoUrls = new ArrayList<>();
+
   public String getTitle() {
     return title;
   }
@@ -76,5 +80,21 @@ public class DiaryCreateRequest {
 
   public void setVideos(List<MultipartFile> videos) {
     this.videos = videos;
+  }
+
+  public List<String> getImageUrls() {
+    return imageUrls;
+  }
+
+  public void setImageUrls(List<String> imageUrls) {
+    this.imageUrls = imageUrls;
+  }
+
+  public List<String> getVideoUrls() {
+    return videoUrls;
+  }
+
+  public void setVideoUrls(List<String> videoUrls) {
+    this.videoUrls = videoUrls;
   }
 }

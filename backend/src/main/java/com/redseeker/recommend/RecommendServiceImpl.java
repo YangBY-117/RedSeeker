@@ -10,10 +10,12 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -33,6 +35,9 @@ public class RecommendServiceImpl implements RecommendService {
 
   private final AiService aiService;
   private final String databaseUrl;
+  private static final int NATIONAL_DAY_MONTH = 10;
+  private static final int NATIONAL_DAY_DAY = 1;
+  private static final int NATIONAL_DAY_WINDOW_DAYS = 20;
 
   public RecommendServiceImpl(AiService aiService) {
     this.aiService = aiService;
@@ -84,12 +89,31 @@ public class RecommendServiceImpl implements RecommendService {
       }
       double locationScore = calculateLocationScore(request, attraction);
       double timeScore = calculateTimeScore(request.getVisitTime(), attraction.getBusinessHours());
+      double dateScore =
+          calculateDateRelevanceScore(
+              request.getVisitTime(),
+              attraction.getName(),
+              tags,
+              attraction.getHistory(),
+              stageInfoMap.get(attraction.getId()));
 
       double finalScore =
-          calculateFinalScore(baseScore, contentScore, cfScore, locationScore, timeScore, request);
+          calculateFinalScore(
+              baseScore, contentScore, cfScore, locationScore, timeScore, dateScore, request);
 
       String reason =
-          generateReason(attraction, tags, request, finalScore, cfScore, locationScore, timeScore);
+          generateReason(
+              attraction,
+              tags,
+              request,
+              finalScore,
+              baseScore,
+              contentScore,
+              cfScore,
+              locationScore,
+              timeScore,
+              dateScore,
+              stageInfoMap.get(attraction.getId()));
       
       // Get rating data
       Double avgRating = averageRatings.get(attraction.getId());
@@ -404,34 +428,60 @@ public class RecommendServiceImpl implements RecommendService {
       List<String> tags,
       RecommendRequest request,
       double finalScore,
+      double baseScore,
+      double contentScore,
       double cfScore,
       double locationScore,
-      double timeScore) {
-    if (locationScore > 0.7) {
-      return "距离您当前位置较近，适合就近安排行程。";
+      double timeScore,
+      double dateScore,
+      AttractionStageInfo stageInfo) {
+    List<String> reasons = new ArrayList<>();
+
+    if (locationScore >= 0.75) {
+      reasons.add("距离您较近，出行成本低。");
     }
-    if (timeScore > 0.7) {
-      return "当前时间段适合参观，营业时间匹配。";
+    if (dateScore >= 0.75 && isNationalDayRelated(attraction.getName(), tags, attraction.getHistory(), stageInfo)) {
+      reasons.add("与国庆主题相关，节日期间更有意义。");
     }
-    if (request.getPreferences() != null && !request.getPreferences().isEmpty()) {
+    if (contentScore >= 0.75 && request.getPreferences() != null && !request.getPreferences().isEmpty()) {
       List<String> hits =
           request.getPreferences().stream()
               .filter(pref -> matchesAny(pref, tags))
               .collect(Collectors.toList());
       if (!hits.isEmpty()) {
-        return "Matches your interests: " + String.join(", ", hits);
+        reasons.add("匹配您的兴趣标签：" + String.join("、", hits) + "。");
       }
     }
-    if (request.getUserId() != null && cfScore > 0.7) {
-      return "Recommended based on similar users' preferences.";
+    if (request.getUserId() != null && cfScore >= 0.75) {
+      reasons.add("相似用户评价较高。");
     }
-    if (finalScore > 0.8) {
-      return "High overall relevance for your trip.";
+    if (baseScore >= 0.75) {
+      reasons.add("综合热度与口碑较高。");
     }
-    if (attraction.getHistory() != null && !attraction.getHistory().isBlank()) {
-      return attraction.getHistory();
+    if (timeScore >= 0.85) {
+      reasons.add("营业时间匹配您的计划。");
     }
-    return "Recommended for your itinerary.";
+
+    if (reasons.isEmpty()) {
+      if (finalScore >= 0.75) {
+        reasons.add("综合匹配度较高。");
+      } else if (attraction.getHistory() != null && !attraction.getHistory().isBlank()) {
+        reasons.add(attraction.getHistory());
+      }
+    }
+
+    if (reasons.size() == 1 && reasons.get(0).contains("营业时间")) {
+      if (attraction.getHistory() != null && !attraction.getHistory().isBlank()) {
+        reasons.add(attraction.getHistory());
+      } else {
+        reasons.add("景点内容具有一定的纪念意义。");
+      }
+    }
+
+    if (reasons.isEmpty()) {
+      return "推荐给您的行程参考。";
+    }
+    return String.join(" ", reasons.stream().limit(2).collect(Collectors.toList()));
   }
 
   private boolean matchesAny(String preference, List<String> tags) {
@@ -470,6 +520,7 @@ public class RecommendServiceImpl implements RecommendService {
       double cfScore,
       double locationScore,
       double timeScore,
+      double dateScore,
       RecommendRequest request) {
     double baseWeight = request.getUserId() == null ? 0.4 : 0.3;
     double contentWeight = request.getUserId() == null ? 0.4 : 0.3;
@@ -478,8 +529,11 @@ public class RecommendServiceImpl implements RecommendService {
         (request.getUserLongitude() != null && request.getUserLatitude() != null) ? 0.15 : 0.0;
     double timeWeight =
         (request.getVisitTime() != null && !request.getVisitTime().isBlank()) ? 0.15 : 0.0;
+    double dateWeight =
+        (request.getVisitTime() != null && !request.getVisitTime().isBlank()) ? 0.1 : 0.0;
 
-    double totalWeight = baseWeight + contentWeight + cfWeight + locationWeight + timeWeight;
+    double totalWeight =
+        baseWeight + contentWeight + cfWeight + locationWeight + timeWeight + dateWeight;
     if (totalWeight <= 0) {
       return 0.5;
     }
@@ -487,15 +541,18 @@ public class RecommendServiceImpl implements RecommendService {
         + contentScore * contentWeight
         + cfScore * cfWeight
         + locationScore * locationWeight
-        + timeScore * timeWeight) / totalWeight;
+        + timeScore * timeWeight
+        + dateScore * dateWeight) / totalWeight;
   }
 
   private double calculateLocationScore(RecommendRequest request, AttractionRecord attraction) {
+    double cityMatchScore =
+        calculateCityMatchScore(request.getCity(), attraction.getAddress(), attraction.getName());
     if (request.getUserLongitude() == null || request.getUserLatitude() == null) {
-      return 0.5;
+      return cityMatchScore > 0 ? cityMatchScore : 0.5;
     }
     if (attraction.getLongitude() == null || attraction.getLatitude() == null) {
-      return 0.4;
+      return cityMatchScore > 0 ? cityMatchScore : 0.4;
     }
     double distance = haversine(
         request.getUserLatitude(),
@@ -503,7 +560,11 @@ public class RecommendServiceImpl implements RecommendService {
         attraction.getLatitude(),
         attraction.getLongitude());
     double maxDistance = 50000.0;
-    return Math.max(0.0, Math.min(1.0, 1.0 - (distance / maxDistance)));
+    double distanceScore = Math.max(0.0, Math.min(1.0, 1.0 - (distance / maxDistance)));
+    if (cityMatchScore <= 0) {
+      return distanceScore;
+    }
+    return (distanceScore * 0.7) + (cityMatchScore * 0.3);
   }
 
   private double calculateTimeScore(String visitTime, String businessHours) {
@@ -537,6 +598,89 @@ public class RecommendServiceImpl implements RecommendService {
         return null;
       }
     }
+  }
+
+  private double calculateDateRelevanceScore(
+      String visitTime,
+      String name,
+      List<String> tags,
+      String history,
+      AttractionStageInfo stageInfo) {
+    LocalDate targetDate = parseVisitDate(visitTime);
+    if (targetDate == null) {
+      return 0.5;
+    }
+
+    LocalDate nationalDay =
+        LocalDate.of(targetDate.getYear(), NATIONAL_DAY_MONTH, NATIONAL_DAY_DAY);
+    long days = Math.abs(ChronoUnit.DAYS.between(targetDate, nationalDay));
+    boolean nearNationalDay = days <= NATIONAL_DAY_WINDOW_DAYS;
+    boolean related = isNationalDayRelated(name, tags, history, stageInfo);
+
+    if (nearNationalDay) {
+      return related ? 1.0 : 0.4;
+    }
+    return related ? 0.6 : 0.5;
+  }
+
+  private LocalDate parseVisitDate(String visitTime) {
+    if (visitTime == null || visitTime.isBlank()) {
+      return null;
+    }
+    try {
+      return OffsetDateTime.parse(visitTime).toLocalDate();
+    } catch (DateTimeParseException ex) {
+      try {
+        return LocalDate.parse(visitTime);
+      } catch (DateTimeParseException ignore) {
+        return null;
+      }
+    }
+  }
+
+  private boolean isNationalDayRelated(
+      String name, List<String> tags, String history, AttractionStageInfo stageInfo) {
+    List<String> keywords =
+        List.of("国庆", "建国", "开国", "新中国", "中华人民共和国成立", "天安门", "开国大典", "首都");
+    if (containsAny(name, keywords) || containsAny(history, keywords)) {
+      return true;
+    }
+    if (stageInfo != null
+        && (containsAny(stageInfo.stageName(), keywords))) {
+      return true;
+    }
+    if (tags != null) {
+      for (String tag : tags) {
+        if (containsAny(tag, keywords)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private boolean containsAny(String text, List<String> keywords) {
+    if (text == null || text.isBlank()) {
+      return false;
+    }
+    for (String keyword : keywords) {
+      if (keyword != null && !keyword.isBlank() && text.contains(keyword)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private double calculateCityMatchScore(String city, String address, String name) {
+    if (city == null || city.isBlank()) {
+      return 0.0;
+    }
+    String trimmedCity = city.trim();
+    if ((address != null && address.contains(trimmedCity))
+        || (name != null && name.contains(trimmedCity))) {
+      return 1.0;
+    }
+    return 0.0;
   }
 
   private TimeWindow parseBusinessHours(String businessHours) {

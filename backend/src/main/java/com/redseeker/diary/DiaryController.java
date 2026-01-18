@@ -93,11 +93,13 @@ public class DiaryController {
       @RequestParam(value = "destination", required = false) String destination,
       @RequestParam(value = "travel_date", required = false) String travelDate,
       @RequestParam(value = "attraction_ids", required = false) String attractionIds,
+      @RequestParam(value = "image_urls", required = false) String imageUrls,
+      @RequestParam(value = "video_urls", required = false) String videoUrls,
       @RequestParam(value = "images", required = false) List<MultipartFile> images,
       @RequestParam(value = "videos", required = false) List<MultipartFile> videos) {
     Long userId = requireUserId(authHeader);
     DiaryCreateRequest request =
-        buildCreateRequest(title, content, destination, travelDate, attractionIds, images, videos);
+        buildCreateRequest(title, content, destination, travelDate, attractionIds, imageUrls, videoUrls, images, videos);
     return ApiResponse.ok(diaryService.createDiary(request, userId));
   }
 
@@ -110,11 +112,13 @@ public class DiaryController {
       @RequestParam(value = "destination", required = false) String destination,
       @RequestParam(value = "travel_date", required = false) String travelDate,
       @RequestParam(value = "attraction_ids", required = false) String attractionIds,
+      @RequestParam(value = "image_urls", required = false) String imageUrls,
+      @RequestParam(value = "video_urls", required = false) String videoUrls,
       @RequestParam(value = "images", required = false) List<MultipartFile> images,
       @RequestParam(value = "videos", required = false) List<MultipartFile> videos) {
     Long userId = requireUserId(authHeader);
     DiaryCreateRequest request =
-        buildCreateRequest(title, content, destination, travelDate, attractionIds, images, videos);
+        buildCreateRequest(title, content, destination, travelDate, attractionIds, imageUrls, videoUrls, images, videos);
     return ApiResponse.ok(diaryService.updateDiary(id, request, userId));
   }
 
@@ -156,6 +160,8 @@ public class DiaryController {
       String destination,
       String travelDate,
       String attractionIds,
+      String imageUrls,
+      String videoUrls,
       List<MultipartFile> images,
       List<MultipartFile> videos) {
     DiaryCreateRequest request = new DiaryCreateRequest();
@@ -165,6 +171,8 @@ public class DiaryController {
     request.setTravelDate(travelDate);
     request.setImages(images != null ? images : Collections.emptyList());
     request.setVideos(videos != null ? videos : Collections.emptyList());
+    request.setImageUrls(parseStringList(imageUrls));
+    request.setVideoUrls(parseStringList(videoUrls));
     request.setAttractionIds(parseAttractionIds(attractionIds));
     return request;
   }
@@ -177,6 +185,17 @@ public class DiaryController {
       return objectMapper.readValue(raw, new TypeReference<List<Long>>() {});
     } catch (Exception ex) {
       throw new ServiceException(ErrorCode.VALIDATION_ERROR, "invalid attraction_ids");
+    }
+  }
+
+  private List<String> parseStringList(String raw) {
+    if (raw == null || raw.isBlank()) {
+      return Collections.emptyList();
+    }
+    try {
+      return objectMapper.readValue(raw, new TypeReference<List<String>>() {});
+    } catch (Exception ex) {
+      throw new ServiceException(ErrorCode.VALIDATION_ERROR, "invalid media urls");
     }
   }
 

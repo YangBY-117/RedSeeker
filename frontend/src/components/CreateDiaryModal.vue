@@ -302,20 +302,30 @@ const handleSubmit = async () => {
     }
 
     // 添加图片（区分File对象和URL字符串）
+    const imageUrls = []
     formData.value.images.forEach((image) => {
       if (image instanceof File) {
         formDataToSend.append('images', image)
       } else if (typeof image === 'string') {
-        // 如果是URL字符串，需要先下载或转换为File
-        // 暂时跳过，或者可以在这里处理URL转File的逻辑
-        console.warn('跳过URL格式的图片:', image)
+        imageUrls.push(image)
       }
     })
+    if (imageUrls.length > 0) {
+      formDataToSend.append('image_urls', JSON.stringify(imageUrls))
+    }
 
-    // 添加视频
+    // 添加视频（区分File对象和URL字符串）
+    const videoUrls = []
     formData.value.videos.forEach((video) => {
-      formDataToSend.append('videos', video)
+      if (video instanceof File) {
+        formDataToSend.append('videos', video)
+      } else if (typeof video === 'string') {
+        videoUrls.push(video)
+      }
     })
+    if (videoUrls.length > 0) {
+      formDataToSend.append('video_urls', JSON.stringify(videoUrls))
+    }
 
     // 调用API创建日记
     const result = await createDiary(formDataToSend)

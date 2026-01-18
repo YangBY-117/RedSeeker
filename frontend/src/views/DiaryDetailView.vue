@@ -20,7 +20,7 @@
           </div>
           <div class="meta-item">
             <span class="meta-icon">📅</span>
-            <span class="meta-text">{{ formatDate(diary.travel_date || diary.created_at) }}</span>
+            <span class="meta-text">{{ formatDate(diary.travelDate || diary.createdAt) }}</span>
           </div>
         </div>
       </div>
@@ -29,13 +29,13 @@
       <div class="diary-stats">
         <div class="stat-item">
           <span class="stat-icon">👁️</span>
-          <span class="stat-value">{{ diary.view_count || 0 }}</span>
+          <span class="stat-value">{{ diary.viewCount || 0 }}</span>
           <span class="stat-label">浏览量</span>
         </div>
         <div class="stat-item">
           <span class="stat-icon">⭐</span>
-          <span class="stat-value">{{ diary.average_rating?.toFixed(1) || '0.0' }}</span>
-          <span class="stat-label">评分 ({{ diary.total_ratings || 0 }})</span>
+          <span class="stat-value">{{ diary.averageRating?.toFixed(1) || '0.0' }}</span>
+          <span class="stat-label">评分 ({{ diary.totalRatings || 0 }})</span>
         </div>
       </div>
 
@@ -69,15 +69,15 @@
             class="media-item"
           >
             <img
-              v-if="media.media_type === 'image'"
-              :src="media.file_path"
+              v-if="media.mediaType === 'image'"
+              :src="resolveMediaUrl(media.filePath)"
               :alt="`图片 ${index + 1}`"
-              @click="showImageViewer(media.file_path)"
+              @click="showImageViewer(resolveMediaUrl(media.filePath))"
             />
             <video
-              v-else-if="media.media_type === 'video'"
-              :src="media.file_path"
-              :poster="media.thumbnail_path"
+              v-else-if="media.mediaType === 'video'"
+              :src="resolveMediaUrl(media.filePath)"
+              :poster="resolveMediaUrl(media.thumbnailPath)"
               controls
             ></video>
           </div>
@@ -104,6 +104,7 @@
         <h3 class="section-title">AI红色记忆动画</h3>
         <p class="section-desc">基于您的红色旅游照片和文字描述，生成专属的红色记忆动画视频</p>
         <button
+          type="button"
           class="btn btn-primary"
           :disabled="generatingAnimation || animationVideoUrl"
           @click="handleGenerateAnimation"
@@ -119,10 +120,11 @@
             </div>
             <span class="progress-text">{{ getProgressPercentage }}%</span>
           </div>
-          <button
-            class="btn btn-outline"
-            @click="checkAnimationStatus"
-          >
+            <button
+              type="button"
+              class="btn btn-outline"
+              @click="checkAnimationStatus"
+            >
             刷新状态
           </button>
         </div>
@@ -145,6 +147,9 @@ import {
   generateAnimation,
   getAnimationStatus
 } from '../services/diaryService'
+
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+const mediaBase = apiBase.replace(/\/api\/?$/, '')
 
 const route = useRoute()
 const router = useRouter()
@@ -202,10 +207,43 @@ const formatDate = (dateString) => {
   })
 }
 
+const resolveMediaUrl = (path) => {
+  if (!path) return ''
+  if (/^https?:\/\//i.test(path)) return path
+  const normalized = path.replace(/\\/g, '/')
+  const uploadsIndex = normalized.indexOf('/uploads/')
+  if (uploadsIndex !== -1) {
+    return `${mediaBase}${normalized.slice(uploadsIndex)}`
+  }
+  if (normalized.startsWith('/')) return `${mediaBase}${normalized}`
+  return `${mediaBase}/${normalized}`
+}
+
 // 图片查看器（简单实现）
 const showImageViewer = (imageUrl) => {
   // 可以在这里实现图片查看器
   window.open(imageUrl, '_blank')
+}
+
+const normalizeDiaryDetail = (data) => {
+  if (!data) return null
+  return {
+    ...data,
+    travelDate: data.travelDate ?? data.travel_date ?? '',
+    createdAt: data.createdAt ?? data.created_at ?? '',
+    viewCount: data.viewCount ?? data.view_count ?? 0,
+    averageRating: data.averageRating ?? data.average_rating ?? 0,
+    totalRatings: data.totalRatings ?? data.total_ratings ?? 0,
+    userRating: data.userRating ?? data.user_rating ?? 0,
+    media: Array.isArray(data.media)
+      ? data.media.map((m) => ({
+          ...m,
+          mediaType: m.mediaType ?? m.media_type,
+          filePath: m.filePath ?? m.file_path,
+          thumbnailPath: m.thumbnailPath ?? m.thumbnail_path
+        }))
+      : []
+  }
 }
 
 // 加载日记详情
@@ -215,10 +253,10 @@ const loadDiary = async () => {
   try {
     const diaryId = route.params.id
     const data = await getDiaryDetail(diaryId)
-    diary.value = data
+    diary.value = normalizeDiaryDetail(data)
     // 如果有用户评分，设置评分
-    if (data.user_rating) {
-      userRating.value = data.user_rating
+    if (diary.value?.userRating) {
+      userRating.value = diary.value.userRating
     }
   } catch (err) {
     console.error('加载日记失败:', err)
@@ -257,20 +295,20 @@ const handleGenerateAnimation = async () => {
   generatingAnimation.value = true
   try {
     const images = diary.value.media
-      ?.filter(m => m.media_type === 'image')
-      .map(m => m.file_path) || []
+      ?.filter(m => m.mediaType === 'image')
+      .map(m => resolveMediaUrl(m.filePath)) || []
     const description = diary.value.content?.substring(0, 500) || ''
     
     const result = await generateAnimation(diary.value.id, {
       images,
       description
     })
-    animationTaskId.value = result.task_id
-    animationTaskStatus.value = result.status
+    animationTaskId.value = result.taskId || result.task_id
+    animationTaskStatus.value = result.status || result.task_status
     
     // 如果已完成，直接显示视频
-    if (result.status === 'completed' && result.video_url) {
-      animationVideoUrl.value = result.video_url
+    if (animationTaskStatus.value === 'completed' && (result.videoUrl || result.video_url)) {
+      animationVideoUrl.value = result.videoUrl || result.video_url
     } else {
       // 开始轮询状态
       checkAnimationStatus()
@@ -289,11 +327,11 @@ const checkAnimationStatus = async () => {
   
   try {
     const result = await getAnimationStatus(animationTaskId.value)
-    animationTaskStatus.value = result.status
+    animationTaskStatus.value = result.status || result.task_status
     
-    if (result.status === 'completed' && result.video_url) {
-      animationVideoUrl.value = result.video_url
-    } else if (result.status === 'processing' || result.status === 'waiting') {
+    if (animationTaskStatus.value === 'completed' && (result.videoUrl || result.video_url)) {
+      animationVideoUrl.value = result.videoUrl || result.video_url
+    } else if (animationTaskStatus.value === 'processing' || animationTaskStatus.value === 'waiting') {
       // 继续轮询
       setTimeout(() => {
         checkAnimationStatus()

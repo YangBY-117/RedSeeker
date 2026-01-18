@@ -111,7 +111,20 @@ public class AIServiceImpl implements AIService {
       
       if (response.statusCode() != 200) {
         LOGGER.error("阿里云文生图API调用失败: status={}, body={}", response.statusCode(), response.body());
-        throw new ServiceException(ErrorCode.INTERNAL_ERROR, "文生图API调用失败: HTTP " + response.statusCode());
+        String errorMessage = "文生图API调用失败: HTTP " + response.statusCode();
+        try {
+          JsonNode errorRoot = objectMapper.readTree(response.body());
+          String errorCode = errorRoot.path("code").asText();
+          String apiMessage = errorRoot.path("message").asText();
+          if ("DataInspectionFailed".equalsIgnoreCase(errorCode)) {
+            errorMessage = "文生图内容触发安全审核，请调整描述后重试";
+          } else if (apiMessage != null && !apiMessage.isBlank()) {
+            errorMessage = "文生图API调用失败: " + apiMessage;
+          }
+        } catch (Exception parseEx) {
+          LOGGER.warn("解析文生图错误响应失败", parseEx);
+        }
+        throw new ServiceException(ErrorCode.VALIDATION_ERROR, errorMessage);
       }
 
       JsonNode root = objectMapper.readTree(response.body());
@@ -229,7 +242,20 @@ public class AIServiceImpl implements AIService {
       
       if (response.statusCode() != 200) {
         LOGGER.error("阿里云图生视频API调用失败: status={}, body={}", response.statusCode(), response.body());
-        throw new ServiceException(ErrorCode.INTERNAL_ERROR, "图生视频API调用失败: HTTP " + response.statusCode());
+        String errorMessage = "图生视频API调用失败: HTTP " + response.statusCode();
+        try {
+          JsonNode errorRoot = objectMapper.readTree(response.body());
+          String errorCode = errorRoot.path("code").asText();
+          String apiMessage = errorRoot.path("message").asText();
+          if ("DataInspectionFailed".equalsIgnoreCase(errorCode)) {
+            errorMessage = "图生视频内容触发安全审核，请更换图片或描述后重试";
+          } else if (apiMessage != null && !apiMessage.isBlank()) {
+            errorMessage = "图生视频API调用失败: " + apiMessage;
+          }
+        } catch (Exception parseEx) {
+          LOGGER.warn("解析图生视频错误响应失败", parseEx);
+        }
+        throw new ServiceException(ErrorCode.VALIDATION_ERROR, errorMessage);
       }
 
       JsonNode root = objectMapper.readTree(response.body());

@@ -262,6 +262,21 @@ const handleDiaryCreated = () => {
   }, 500)
 }
 
+// 处理日记删除
+const handleDiaryDeleted = (deletedId) => {
+  diaries.value = diaries.value.filter(diary => diary.id !== deletedId)
+  if (total.value > 0) {
+    total.value -= 1
+  }
+  if (diaries.value.length === 0 && currentPage.value > 1) {
+    goToPage(currentPage.value - 1)
+    return
+  }
+  if (!searchKeyword.value.trim()) {
+    loadDiaries(currentPage.value)
+  }
+}
+
 // 监听打开创建日记事件（从用户中心跳转过来时）
 const handleOpenCreateDiary = () => {
   if (isAuthenticated.value) {

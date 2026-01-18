@@ -23,7 +23,7 @@ export async function generateDiaryContent(params) {
   }, {
     timeout: 120000 // AI生成日记内容可能需要更长时间，设置为120秒
   })
-  return response.data.data
+  return response.data?.data ?? response.data ?? null
 }
 
 /**
@@ -35,8 +35,10 @@ export async function generateDiaryContent(params) {
 export async function generateImageFromText(params) {
   const response = await api.post('/ai/text-to-image', {
     prompt: params.prompt
+  }, {
+    timeout: 120000
   })
-  return response.data.data
+  return response.data?.data ?? response.data ?? null
 }
 
 /**
@@ -50,6 +52,8 @@ export async function generateAnimationFromImages(params) {
   const response = await api.post('/ai/image-to-animation', {
     images: params.images,
     description: params.description
+  }, {
+    timeout: 180000
   })
-  return response.data.data
+  return response.data?.data ?? response.data ?? null
 }

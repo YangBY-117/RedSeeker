@@ -49,6 +49,7 @@
           :key="diary.id"
           :diary="diary"
           @click="viewDiary(diary.id)"
+          @deleted="handleDiaryDeleted"
         />
       </div>
 
@@ -222,6 +223,13 @@ const goToDiaryPage = (page) => {
   if (page >= 1 && page <= diaryTotalPages.value) {
     loadMyDiaries(page)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+const handleDiaryDeleted = (deletedId) => {
+  myDiaries.value = myDiaries.value.filter(diary => diary.id !== deletedId)
+  if (myDiaries.value.length === 0 && diaryPage.value > 1) {
+    goToDiaryPage(diaryPage.value - 1)
   }
 }
 

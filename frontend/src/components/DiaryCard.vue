@@ -3,8 +3,8 @@
     <div v-if="canDelete" class="card-delete" @click.stop="handleDelete">
       🗑️
     </div>
-    <div v-if="diary.cover_image" class="card-cover">
-      <img :src="diary.cover_image" :alt="diary.title" />
+    <div v-if="coverImage" class="card-cover">
+      <img :src="coverImage" :alt="diary.title" />
     </div>
     <div class="card-content">
       <h3 class="card-title">{{ diary.title }}</h3>
@@ -22,20 +22,20 @@
       <div class="card-stats">
         <div class="stat-item">
           <span class="stat-icon">👁️</span>
-          <span class="stat-value">{{ diary.view_count || 0 }}</span>
+          <span class="stat-value">{{ viewCount }}</span>
         </div>
         <div class="stat-item">
           <span class="stat-icon">⭐</span>
-          <span class="stat-value">{{ diary.average_rating?.toFixed(1) || '0.0' }}</span>
-          <span class="stat-label">({{ diary.total_ratings || 0 }})</span>
+          <span class="stat-value">{{ averageRatingText }}</span>
+          <span class="stat-label">({{ totalRatings }})</span>
         </div>
         <div class="stat-item">
           <span class="stat-icon">📅</span>
-          <span class="stat-value">{{ formatDate(diary.created_at) }}</span>
+          <span class="stat-value">{{ formatDate(createdAt) }}</span>
         </div>
       </div>
     </div>
-    <div v-if="diary.travel_date" class="red-tourism-tag">
+    <div v-if="travelDate" class="red-tourism-tag">
       红色之旅
     </div>
   </div>
@@ -62,6 +62,14 @@ const canDelete = computed(() => {
   return user.value && user.value.id === props.diary.author?.id
 })
 
+const coverImage = computed(() => props.diary.coverImage || props.diary.cover_image || '')
+const viewCount = computed(() => props.diary.viewCount ?? props.diary.view_count ?? 0)
+const averageRating = computed(() => props.diary.averageRating ?? props.diary.average_rating ?? 0)
+const averageRatingText = computed(() => Number(averageRating.value || 0).toFixed(1))
+const totalRatings = computed(() => props.diary.totalRatings ?? props.diary.total_ratings ?? 0)
+const createdAt = computed(() => props.diary.createdAt || props.diary.created_at || '')
+const travelDate = computed(() => props.diary.travelDate || props.diary.travel_date || '')
+
 const handleCardClick = () => {
   emit('click')
 }
@@ -77,7 +85,15 @@ const handleDelete = async (e) => {
     emit('deleted', props.diary.id)
   } catch (error) {
     console.error('删除日记失败:', error)
-    alert('删除失败，请稍后重试')
+    const status = error.response?.status
+    const message = error.response?.data?.message
+    if (status === 401) {
+      alert('登录已失效，请重新登录')
+    } else if (status === 403) {
+      alert('无权限删除该日记')
+    } else {
+      alert(message || '删除失败，请稍后重试')
+    }
   }
 }
 

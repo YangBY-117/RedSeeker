@@ -171,7 +171,7 @@ public class DiaryServiceImpl implements DiaryService {
 
     // 保存媒体文件和关联景点（即使失败也不影响日记创建）
     try {
-      saveDiaryMedia(diaryId, request.getImages(), request.getVideos());
+      saveDiaryMedia(diaryId, request.getImages(), request.getImageUrls(), request.getVideos(), request.getVideoUrls());
       LOGGER.info("日记媒体文件保存成功: diaryId={}", diaryId);
     } catch (Exception ex) {
       LOGGER.warn("保存日记媒体文件失败，但日记已创建: diaryId={}", diaryId, ex);
@@ -228,7 +228,7 @@ public class DiaryServiceImpl implements DiaryService {
       throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to update diary");
     }
 
-    replaceDiaryMedia(diaryId, request.getImages(), request.getVideos());
+    replaceDiaryMedia(diaryId, request.getImages(), request.getImageUrls(), request.getVideos(), request.getVideoUrls());
     replaceDiaryAttractions(diaryId, request.getAttractionIds());
     return loadDiarySummaryById(diaryId);
   }
@@ -286,8 +286,12 @@ public class DiaryServiceImpl implements DiaryService {
 
   @Override
   public DiaryAnimationResponse generateAnimation(Long diaryId, DiaryAnimationRequest request, Long userId) {
-    assertDiaryOwner(diaryId, userId);
+    assertUser(userId);
+    // Ensure diary exists before creating a task.
+    loadDiarySummaryById(diaryId);
     String taskId = UUID.randomUUID().toString();
+    int imageCount = request != null && request.getImages() != null ? request.getImages().size() : 0;
+    LOGGER.info("Generate animation requested: diaryId={}, userId={}, images={}", diaryId, userId, imageCount);
     return new DiaryAnimationResponse(taskId, "processing", 30);
   }
 
@@ -609,26 +613,43 @@ public class DiaryServiceImpl implements DiaryService {
     }
   }
 
-  private void saveDiaryMedia(long diaryId, List<MultipartFile> images, List<MultipartFile> videos) {
-    if ((images == null || images.isEmpty()) && (videos == null || videos.isEmpty())) {
+  private void saveDiaryMedia(
+      long diaryId,
+      List<MultipartFile> images,
+      List<String> imageUrls,
+      List<MultipartFile> videos,
+      List<String> videoUrls) {
+    if ((images == null || images.isEmpty())
+        && (videos == null || videos.isEmpty())
+        && (imageUrls == null || imageUrls.isEmpty())
+        && (videoUrls == null || videoUrls.isEmpty())) {
       return;
     }
     try (Connection connection = openConnection()) {
       int order = 0;
       order = insertMedia(connection, diaryId, images, "image", order);
-      insertMedia(connection, diaryId, videos, "video", order);
+      order = insertUrlMedia(connection, diaryId, imageUrls, "image", order);
+      order = insertMedia(connection, diaryId, videos, "video", order);
+      insertUrlMedia(connection, diaryId, videoUrls, "video", order);
     } catch (SQLException ex) {
       LOGGER.error("Failed to save diary media", ex);
       throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to save diary media");
     }
   }
 
-  private void replaceDiaryMedia(long diaryId, List<MultipartFile> images, List<MultipartFile> videos) {
+  private void replaceDiaryMedia(
+      long diaryId,
+      List<MultipartFile> images,
+      List<String> imageUrls,
+      List<MultipartFile> videos,
+      List<String> videoUrls) {
     try (Connection connection = openConnection()) {
       deleteDiaryMedia(connection, diaryId);
       int order = 0;
       order = insertMedia(connection, diaryId, images, "image", order);
-      insertMedia(connection, diaryId, videos, "video", order);
+      order = insertUrlMedia(connection, diaryId, imageUrls, "image", order);
+      order = insertMedia(connection, diaryId, videos, "video", order);
+      insertUrlMedia(connection, diaryId, videoUrls, "video", order);
     } catch (SQLException ex) {
       LOGGER.error("Failed to replace diary media", ex);
       throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to save diary media");
@@ -654,6 +675,32 @@ public class DiaryServiceImpl implements DiaryService {
         statement.setLong(1, diaryId);
         statement.setString(2, type);
         statement.setString(3, storedPath);
+        statement.setInt(4, order);
+        statement.executeUpdate();
+      }
+      order++;
+    }
+    return order;
+  }
+
+  private int insertUrlMedia(
+      Connection connection, long diaryId, List<String> urls, String type, int startOrder)
+      throws SQLException {
+    if (urls == null) {
+      return startOrder;
+    }
+    int order = startOrder;
+    for (String url : urls) {
+      if (url == null || url.isBlank()) {
+        continue;
+      }
+      try (PreparedStatement statement =
+          connection.prepareStatement(
+              "INSERT INTO diary_media (diary_id, media_type, file_path, display_order, created_at) "
+                  + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)")) {
+        statement.setLong(1, diaryId);
+        statement.setString(2, type);
+        statement.setString(3, url.trim());
         statement.setInt(4, order);
         statement.executeUpdate();
       }
