@@ -6,9 +6,14 @@ import com.redseeker.common.ApiResponse;
 import com.redseeker.common.ErrorCode;
 import com.redseeker.common.ServiceException;
 import com.redseeker.user.UserService;
+import com.redseeker.user.UserServiceImpl;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,26 +30,36 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/diary")
 public class DiaryController {
+  private static final Logger LOGGER = LoggerFactory.getLogger(DiaryController.class);
   private final DiaryService diaryService;
   private final UserService userService;
+  private final UserServiceImpl userServiceImpl;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
-  public DiaryController(DiaryService diaryService, UserService userService) {
+  public DiaryController(DiaryService diaryService, UserService userService, UserServiceImpl userServiceImpl) {
     this.diaryService = diaryService;
     this.userService = userService;
+    this.userServiceImpl = userServiceImpl;
   }
 
   @GetMapping("/list")
   public ApiResponse<DiaryListResponse> listDiaries(
+      @RequestHeader(value = "Authorization", required = false) String authHeader,
       @RequestParam(value = "sortBy", required = false) String sortBy,
       @RequestParam(value = "destination", required = false) String destination,
       @RequestParam(value = "userId", required = false) Long userId,
       @RequestParam(value = "page", defaultValue = "1") int page,
       @RequestParam(value = "pageSize", defaultValue = "10") int pageSize) {
+    // 如果传入了 userId，使用传入的；否则从 token 中获取
+    Long currentUserId = userId;
+    if (currentUserId == null) {
+      currentUserId = resolveUserId(authHeader);
+    }
+    
     DiaryListQuery query = new DiaryListQuery();
     query.setSortBy(sortBy);
     query.setDestination(destination);
-    query.setUserId(userId);
+    query.setUserId(currentUserId);
     query.setPage(page);
     query.setPageSize(pageSize);
     return ApiResponse.ok(diaryService.listDiaries(query));
@@ -140,6 +155,20 @@ public class DiaryController {
     return ApiResponse.ok(diaryService.rateDiary(id, request.getRating(), userId));
   }
 
+  @PostMapping("/{id}/comment")
+  public ApiResponse<DiaryComment> addComment(
+      @PathVariable("id") Long id,
+      @RequestHeader(value = "Authorization", required = false) String authHeader,
+      @Valid @RequestBody DiaryCommentRequest request) {
+    Long userId = requireUserId(authHeader);
+    return ApiResponse.ok(diaryService.addComment(id, request.getContent(), userId));
+  }
+
+  @GetMapping("/{id}/comments")
+  public ApiResponse<List<DiaryComment>> getComments(@PathVariable("id") Long id) {
+    return ApiResponse.ok(diaryService.getComments(id));
+  }
+
   @PostMapping("/{id}/generate-animation")
   public ApiResponse<DiaryAnimationResponse> generateAnimation(
       @PathVariable("id") Long id,
@@ -152,6 +181,22 @@ public class DiaryController {
   @GetMapping("/animation-status/{taskId}")
   public ApiResponse<DiaryAnimationStatusResponse> animationStatus(@PathVariable("taskId") String taskId) {
     return ApiResponse.ok(diaryService.getAnimationStatus(taskId));
+  }
+
+  @DeleteMapping("/admin/delete-all")
+  public ApiResponse<Boolean> deleteAllDiaries(
+      @RequestHeader(value = "Authorization", required = false) String authHeader) {
+    String token = extractToken(authHeader);
+    userServiceImpl.ensureAdmin(token);
+    diaryService.deleteAllDiaries();
+    return ApiResponse.ok(true);
+  }
+
+  private String extractToken(String authHeader) {
+    if (authHeader == null || authHeader.isBlank()) {
+      return null;
+    }
+    return authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
   }
 
   private DiaryCreateRequest buildCreateRequest(
@@ -193,9 +238,30 @@ public class DiaryController {
       return Collections.emptyList();
     }
     try {
+      // 尝试解析JSON数组
       return objectMapper.readValue(raw, new TypeReference<List<String>>() {});
     } catch (Exception ex) {
-      throw new ServiceException(ErrorCode.VALIDATION_ERROR, "invalid media urls");
+      // 如果JSON解析失败，尝试按逗号分割（兼容简单字符串列表）
+      try {
+        String[] parts = raw.split(",");
+        List<String> result = new ArrayList<>();
+        for (String part : parts) {
+          String trimmed = part.trim();
+          if (!trimmed.isEmpty()) {
+            // 移除可能的引号
+            if ((trimmed.startsWith("\"") && trimmed.endsWith("\"")) ||
+                (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+              trimmed = trimmed.substring(1, trimmed.length() - 1);
+            }
+            result.add(trimmed);
+          }
+        }
+        return result;
+      } catch (Exception e) {
+        // 如果都失败了，记录错误但不抛出异常，返回空列表
+        LOGGER.warn("Failed to parse string list: {}", raw, ex);
+        return Collections.emptyList();
+      }
     }
   }
 

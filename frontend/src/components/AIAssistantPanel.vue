@@ -159,10 +159,11 @@
               v-for="(video, index) in savedVideos"
               :key="index"
               class="history-video-item"
-              @click="videoUrl = video; handleUseVideo()"
             >
               <video :src="video" preload="metadata"></video>
-              <div class="video-overlay">点击使用</div>
+              <div class="video-overlay">
+                <button type="button" class="btn-use-video" @click.stop="handleUseHistoryVideo(video)">使用此视频</button>
+              </div>
             </div>
           </div>
         </div>
@@ -475,6 +476,13 @@ const handleUseImage = () => {
 const handleUseVideo = () => {
   if (videoUrl.value) {
     emit('useVideo', videoUrl.value)
+  }
+}
+
+// 使用历史视频
+const handleUseHistoryVideo = (video) => {
+  if (video) {
+    emit('useVideo', video)
   }
 }
 

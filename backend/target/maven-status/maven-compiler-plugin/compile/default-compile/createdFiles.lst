@@ -14,6 +14,7 @@ com\redseeker\recommend\RecommendBrowseRequest.class
 com\redseeker\recommend\RecommendServiceImpl$AttractionStageInfo.class
 com\redseeker\route\AttractionSummary.class
 com\redseeker\user\UserRatingResponse.class
+com\redseeker\diary\DiaryCommentRequest.class
 com\redseeker\route\RouteStep.class
 com\redseeker\user\UserServiceImpl.class
 com\redseeker\place\RoutePlanResponse.class
@@ -28,6 +29,7 @@ com\redseeker\user\AuthController.class
 com\redseeker\recommend\RecommendService.class
 com\redseeker\place\RoutePlanServiceImpl.class
 com\redseeker\place\PlaceLocation.class
+com\redseeker\diary\DiaryComment.class
 com\redseeker\user\UserRegisterRequest.class
 com\redseeker\user\UserBrowseResponse.class
 com\redseeker\recommend\AiPlanRequest.class

@@ -34,8 +34,12 @@
         <!-- 用户操作区域 -->
         <div class="navbar-actions">
           <div v-if="isAuthenticated && user" class="user-info">
-            <div class="user-avatar" @click="showUserMenu = !showUserMenu">
-              {{ getUserInitial() }}
+            <div 
+              class="user-avatar" 
+              :style="avatarStyle"
+              @click="showUserMenu = !showUserMenu"
+              :title="user.username"
+            >
             </div>
             <div v-if="showUserMenu" class="user-dropdown">
               <div class="dropdown-item" @click="goToUserCenter">
@@ -60,7 +64,7 @@
   </template>
   
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import LoginModal from './LoginModal.vue'
@@ -86,6 +90,34 @@ const getUserInitial = () => {
   if (!user.value || !user.value.username) return '👤'
   return user.value.username.charAt(0).toUpperCase()
 }
+
+// 默认头像路径
+const DEFAULT_AVATAR = '/生成系统头像.png'
+
+// 头像样式
+const avatarStyle = computed(() => {
+  let avatarUrl = DEFAULT_AVATAR
+  if (user.value?.avatar) {
+    const rawAvatar = user.value.avatar
+    // 如果是相对路径，需要加上API基础URL
+    if (rawAvatar.startsWith('/uploads/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+      avatarUrl = apiBase.replace(/\/api\/?$/, '') + rawAvatar
+    } else if (rawAvatar.startsWith('http://') || rawAvatar.startsWith('https://')) {
+      avatarUrl = rawAvatar
+    } else {
+      // 其他情况，尝试作为相对路径处理
+      avatarUrl = rawAvatar
+    }
+  }
+  return {
+    backgroundImage: `url(${avatarUrl})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundColor: '#f0f0f0', // 添加背景色，避免白色背景时看不到
+    color: 'transparent'
+  }
+})
 
 // 跳转到用户中心
 const goToUserCenter = () => {

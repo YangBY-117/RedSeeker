@@ -7,6 +7,7 @@ public class UserProfileUpdateRequest {
   private Long userId;
   private String username;
   private String password;
+  private String avatar;
 
   public Long getUserId() {
     return userId;
@@ -30,5 +31,13 @@ public class UserProfileUpdateRequest {
 
   public void setPassword(String password) {
     this.password = password;
+  }
+
+  public String getAvatar() {
+    return avatar;
+  }
+
+  public void setAvatar(String avatar) {
+    this.avatar = avatar;
   }
 }

@@ -19,9 +19,15 @@ public interface DiaryService {
 
   void deleteDiary(Long diaryId, Long userId);
 
+  void deleteAllDiaries();
+
   DiaryRatingResponse rateDiary(Long diaryId, int rating, Long userId);
 
   DiaryAnimationResponse generateAnimation(Long diaryId, DiaryAnimationRequest request, Long userId);
 
   DiaryAnimationStatusResponse getAnimationStatus(String taskId);
+
+  DiaryComment addComment(Long diaryId, String content, Long userId);
+
+  List<DiaryComment> getComments(Long diaryId);
 }

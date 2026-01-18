@@ -8,9 +8,25 @@
         <RouterLink to="/route" class="nav-link">路径规划</RouterLink>
         <RouterLink to="/places" class="nav-link">场所查询</RouterLink>
         <RouterLink to="/diary" class="nav-link">旅游日记</RouterLink>
-        <div v-if="isAuthenticated" class="user-info">
+        <div v-if="isAuthenticated && user" class="user-info">
+          <div 
+            class="user-avatar" 
+            :style="avatarStyle"
+            @click="showUserMenu = !showUserMenu"
+            :title="user.username"
+          ></div>
           <span class="username">欢迎，{{ user?.username }}</span>
           <button @click="handleLogout" class="logout-btn">退出</button>
+          <div v-if="showUserMenu" class="user-dropdown">
+            <div class="dropdown-item" @click="goToUserCenter">
+              <span class="dropdown-icon">👤</span>
+              <span>用户中心</span>
+            </div>
+            <div class="dropdown-item" @click="handleLogout">
+              <span class="dropdown-icon">🚪</span>
+              <span>退出登录</span>
+            </div>
+          </div>
         </div>
       </nav>
     </header>
@@ -24,13 +40,49 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { RouterLink, RouterView } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { RouterLink, RouterView, useRouter } from 'vue-router'
 import LoginModal from './components/LoginModal.vue'
 import { useAuth } from './composables/useAuth'
 
+const router = useRouter()
 const { user, isAuthenticated, logout } = useAuth()
 const showLoginModal = ref(false)
+const showUserMenu = ref(false)
+
+// 默认头像路径
+const DEFAULT_AVATAR = '/生成系统头像.png'
+
+// 头像样式
+const avatarStyle = computed(() => {
+  let avatarUrl = DEFAULT_AVATAR
+  if (user.value?.avatar) {
+    const rawAvatar = user.value.avatar
+    // 如果是相对路径，需要加上API基础URL
+    if (rawAvatar.startsWith('/uploads/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+      avatarUrl = apiBase.replace(/\/api\/?$/, '') + rawAvatar
+    } else if (rawAvatar.startsWith('http://') || rawAvatar.startsWith('https://')) {
+      avatarUrl = rawAvatar
+    } else {
+      // 其他情况，尝试作为相对路径处理
+      avatarUrl = rawAvatar
+    }
+  }
+  return {
+    backgroundImage: `url(${avatarUrl})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundColor: '#f0f0f0', // 添加背景色，避免白色背景时看不到
+    color: 'transparent'
+  }
+})
+
+// 跳转到用户中心
+const goToUserCenter = () => {
+  showUserMenu.value = false
+  router.push('/user/center')
+}
 
 // 监听未授权事件
 const handleUnauthorized = () => {
@@ -40,16 +92,26 @@ const handleUnauthorized = () => {
 // 监听未授权事件
 onMounted(() => {
   window.addEventListener('auth:unauthorized', handleUnauthorized)
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
   window.removeEventListener('auth:unauthorized', handleUnauthorized)
+  document.removeEventListener('click', handleClickOutside)
 })
 
 // 处理登出
 const handleLogout = () => {
   logout()
+  showUserMenu.value = false
   showLoginModal.value = true
+}
+
+// 点击外部关闭菜单
+const handleClickOutside = (event) => {
+  if (!event.target.closest('.user-info')) {
+    showUserMenu.value = false
+  }
 }
 </script>
 
@@ -126,6 +188,53 @@ const handleLogout = () => {
   margin-left: auto;
   padding-left: 20px;
   border-left: 1px solid rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  border: 2px solid rgba(198, 40, 40, 0.2);
+}
+
+.user-avatar:hover {
+  transform: scale(1.1);
+  border-color: var(--color-primary, #c62828);
+}
+
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 160px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: #333;
+  font-size: 14px;
+}
+
+.dropdown-item:hover {
+  background: #f5f5f5;
+}
+
+.dropdown-icon {
+  font-size: 16px;
 }
 
 .username {

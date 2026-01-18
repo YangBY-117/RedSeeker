@@ -157,6 +157,31 @@
             </button>
             <span class="file-count">{{ formData.videos.length }} 个视频</span>
           </div>
+          <div v-if="formData.videos.length > 0" class="video-preview-grid">
+            <div
+              v-for="(video, index) in formData.videos"
+              :key="index"
+              class="video-preview-item"
+            >
+              <video
+                v-if="video instanceof File"
+                :src="getVideoUrl(video)"
+                preload="metadata"
+                class="video-preview"
+              ></video>
+              <div v-else class="video-url-preview">
+                <span class="video-icon">🎬</span>
+                <span class="video-url-text">视频 {{ index + 1 }}</span>
+              </div>
+              <button
+                type="button"
+                @click="removeVideo(index)"
+                class="remove-btn"
+              >
+                ×
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- 错误提示 -->
@@ -236,6 +261,12 @@ const handleVideoChange = (event) => {
   event.target.value = ''
 }
 
+// 获取视频预览URL
+const getVideoUrl = (file) => {
+  if (typeof file === 'string') return file
+  return URL.createObjectURL(file)
+}
+
 // 获取图片预览URL
 const getImageUrl = (file) => {
   if (typeof file === 'string') return file
@@ -249,6 +280,15 @@ const removeImage = (index) => {
     URL.revokeObjectURL(URL.createObjectURL(image))
   }
   formData.value.images.splice(index, 1)
+}
+
+// 移除视频
+const removeVideo = (index) => {
+  const video = formData.value.videos[index]
+  if (video instanceof File) {
+    URL.revokeObjectURL(URL.createObjectURL(video))
+  }
+  formData.value.videos.splice(index, 1)
 }
 
 // AI助手回调
@@ -270,10 +310,13 @@ const handleUseAIImage = (imageUrl) => {
 
 const handleUseAIVideo = (videoUrl) => {
   console.log('使用AI生成的视频:', videoUrl)
-  if (typeof videoUrl === 'string') {
-    formData.value.videos.push(videoUrl)
+  if (typeof videoUrl === 'string' && videoUrl.trim()) {
+    // 检查是否已存在
+    if (!formData.value.videos.includes(videoUrl)) {
+      formData.value.videos.push(videoUrl)
+    }
   }
-  showAIAssistant.value = false
+  // 不自动关闭，让用户可以选择多个视频
 }
 
 // 提交表单
@@ -356,14 +399,15 @@ const handleSubmit = async () => {
   } catch (err) {
       console.error('创建日记请求失败:', err)
       
-      // 由于日记实际已经创建成功，所有错误都不显示，直接触发刷新
+      // 由于日记实际已经创建成功（后端会捕获媒体保存异常但继续执行），
+      // 所有错误都不显示，直接触发刷新
       // 500错误、网络错误等都可能是后端处理时间过长导致连接断开，但日记已创建
       console.warn('请求失败，但日记可能已创建，触发刷新')
       // 延迟一下再刷新，给后端时间完成处理
       setTimeout(() => {
         emit('created')
         emit('close')
-      }, 1000)
+      }, 1500)
   } finally {
     submitting.value = false
   }
@@ -519,6 +563,48 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.video-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-3);
+}
+
+.video-preview-item {
+  position: relative;
+  aspect-ratio: 16/9;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.video-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-url-preview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+  color: white;
+}
+
+.video-icon {
+  font-size: 32px;
+  margin-bottom: var(--spacing-1);
+}
+
+.video-url-text {
+  font-size: var(--font-size-xs);
 }
 
 .remove-btn {

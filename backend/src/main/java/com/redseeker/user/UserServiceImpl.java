@@ -28,6 +28,8 @@ public class UserServiceImpl implements UserService {
 
   public UserServiceImpl() {
     this.databaseUrl = resolveDatabaseUrl();
+    // 初始化管理员用户
+    initializeAdminUser();
   }
 
   @Override
@@ -87,7 +89,7 @@ public class UserServiceImpl implements UserService {
     if (record == null) {
       throw new ServiceException(ErrorCode.NOT_FOUND, "user not found");
     }
-    return new UserProfileResponse(record.id, record.username, record.createdAt, record.lastLogin);
+    return new UserProfileResponse(record.id, record.username, record.createdAt, record.lastLogin, record.avatar, record.isAdmin);
   }
 
   @Override
@@ -99,11 +101,13 @@ public class UserServiceImpl implements UserService {
 
     String username = normalize(request.getUsername());
     String password = request.getPassword();
+    String avatar = request.getAvatar();
     boolean updateUsername = username != null && !username.equals(record.username);
     boolean updatePassword = password != null && !password.isBlank();
+    boolean updateAvatar = avatar != null && !avatar.equals(record.avatar);
 
-    if (!updateUsername && !updatePassword) {
-      return new UserProfileResponse(record.id, record.username, record.createdAt, record.lastLogin);
+    if (!updateUsername && !updatePassword && !updateAvatar) {
+      return getProfile(record.id);
     }
 
     if (updateUsername) {
@@ -125,6 +129,13 @@ public class UserServiceImpl implements UserService {
       }
       sql.append("password = ?");
       params.add(passwordEncoder.encode(password));
+    }
+    if (updateAvatar) {
+      if (!params.isEmpty()) {
+        sql.append(", ");
+      }
+      sql.append("avatar = ?");
+      params.add(avatar);
     }
     sql.append(" WHERE id = ?");
     params.add(record.id);
@@ -418,7 +429,7 @@ public class UserServiceImpl implements UserService {
     if (userId == null) {
       return null;
     }
-    String sql = "SELECT id, username, password, created_at, last_login FROM users WHERE id = ?";
+    String sql = "SELECT id, username, password, created_at, last_login, avatar, is_admin FROM users WHERE id = ?";
     try (Connection connection = openConnection();
         PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setLong(1, userId);
@@ -429,7 +440,9 @@ public class UserServiceImpl implements UserService {
               rs.getString("username"),
               rs.getString("password"),
               rs.getString("created_at"),
-              rs.getString("last_login"));
+              rs.getString("last_login"),
+              rs.getString("avatar"),
+              rs.getInt("is_admin") == 1);
         }
       }
     } catch (SQLException ex) {
@@ -443,7 +456,7 @@ public class UserServiceImpl implements UserService {
     if (username == null || username.isBlank()) {
       return null;
     }
-    String sql = "SELECT id, username, password, created_at, last_login FROM users WHERE username = ?";
+    String sql = "SELECT id, username, password, created_at, last_login, avatar, is_admin FROM users WHERE username = ?";
     try (Connection connection = openConnection();
         PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setString(1, username);
@@ -454,7 +467,9 @@ public class UserServiceImpl implements UserService {
               rs.getString("username"),
               rs.getString("password"),
               rs.getString("created_at"),
-              rs.getString("last_login"));
+              rs.getString("last_login"),
+              rs.getString("avatar"),
+              rs.getInt("is_admin") == 1);
         }
       }
     } catch (SQLException ex) {
@@ -492,19 +507,91 @@ public class UserServiceImpl implements UserService {
     return trimmed.isEmpty() ? null : trimmed;
   }
 
+  public boolean isAdmin(Long userId) {
+    UserRecord record = findUserById(userId);
+    return record != null && record.isAdmin;
+  }
+
+  public void ensureAdmin(String token) {
+    Long userId = resolveUserId(token);
+    if (userId == null) {
+      throw new ServiceException(ErrorCode.UNAUTHORIZED, "Invalid or missing auth token");
+    }
+    if (!isAdmin(userId)) {
+      throw new ServiceException(ErrorCode.FORBIDDEN, "Admin access required");
+    }
+  }
+
+  public void initializeAdminUser() {
+    try (Connection connection = openConnection()) {
+      // 检查表是否存在 avatar 和 is_admin 列
+      try (Statement stmt = connection.createStatement();
+          ResultSet rs = stmt.executeQuery("PRAGMA table_info(users)")) {
+        boolean hasAvatar = false;
+        boolean hasIsAdmin = false;
+        while (rs.next()) {
+          String columnName = rs.getString("name");
+          if ("avatar".equals(columnName)) {
+            hasAvatar = true;
+          }
+          if ("is_admin".equals(columnName)) {
+            hasIsAdmin = true;
+          }
+        }
+        
+        // 添加缺失的列
+        if (!hasAvatar) {
+          stmt.executeUpdate("ALTER TABLE users ADD COLUMN avatar TEXT");
+          LOGGER.info("Added avatar column to users table");
+        }
+        if (!hasIsAdmin) {
+          stmt.executeUpdate("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0");
+          LOGGER.info("Added is_admin column to users table");
+        }
+      }
+
+      // 检查管理员用户是否存在
+      UserRecord admin = findUserByUsername("rooter");
+      if (admin == null) {
+        String hashed = passwordEncoder.encode("rooter123");
+        String sql = "INSERT INTO users (username, password, is_admin) VALUES (?, ?, 1)";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+          statement.setString(1, "rooter");
+          statement.setString(2, hashed);
+          statement.executeUpdate();
+          LOGGER.info("Created admin user: rooter");
+        }
+      } else if (!admin.isAdmin) {
+        // 如果用户存在但不是管理员，更新为管理员
+        String sql = "UPDATE users SET is_admin = 1 WHERE username = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+          statement.setString(1, "rooter");
+          statement.executeUpdate();
+          LOGGER.info("Updated user rooter to admin");
+        }
+      }
+    } catch (SQLException ex) {
+      LOGGER.error("Failed to initialize admin user", ex);
+    }
+  }
+
   private static final class UserRecord {
     private final Long id;
     private final String username;
     private final String password;
     private final String createdAt;
     private final String lastLogin;
+    private final String avatar;
+    private final boolean isAdmin;
 
-    private UserRecord(Long id, String username, String password, String createdAt, String lastLogin) {
+    private UserRecord(Long id, String username, String password, String createdAt, String lastLogin, String avatar, boolean isAdmin) {
       this.id = id;
       this.username = username;
       this.password = password;
       this.createdAt = createdAt;
       this.lastLogin = lastLogin;
+      this.avatar = avatar;
+      this.isAdmin = isAdmin;
     }
   }
 }

@@ -5,6 +5,8 @@ public class UserProfileResponse {
   private String username;
   private String createdAt;
   private String lastLogin;
+  private String avatar;
+  private Boolean isAdmin;
 
   public UserProfileResponse() {
   }
@@ -14,6 +16,15 @@ public class UserProfileResponse {
     this.username = username;
     this.createdAt = createdAt;
     this.lastLogin = lastLogin;
+  }
+
+  public UserProfileResponse(Long id, String username, String createdAt, String lastLogin, String avatar, Boolean isAdmin) {
+    this.id = id;
+    this.username = username;
+    this.createdAt = createdAt;
+    this.lastLogin = lastLogin;
+    this.avatar = avatar;
+    this.isAdmin = isAdmin;
   }
 
   public Long getId() {
@@ -46,5 +57,21 @@ public class UserProfileResponse {
 
   public void setLastLogin(String lastLogin) {
     this.lastLogin = lastLogin;
+  }
+
+  public String getAvatar() {
+    return avatar;
+  }
+
+  public void setAvatar(String avatar) {
+    this.avatar = avatar;
+  }
+
+  public Boolean getIsAdmin() {
+    return isAdmin;
+  }
+
+  public void setIsAdmin(Boolean isAdmin) {
+    this.isAdmin = isAdmin;
   }
 }

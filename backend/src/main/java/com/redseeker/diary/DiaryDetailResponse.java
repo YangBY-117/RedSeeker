@@ -16,6 +16,7 @@ public class DiaryDetailResponse {
   private List<DiaryMedia> media = new ArrayList<>();
   private List<DiaryAttraction> attractions = new ArrayList<>();
   private Integer userRating;
+  private Integer commentCount;
   private String createdAt;
   private String updatedAt;
 
@@ -129,5 +130,13 @@ public class DiaryDetailResponse {
 
   public void setUpdatedAt(String updatedAt) {
     this.updatedAt = updatedAt;
+  }
+
+  public Integer getCommentCount() {
+    return commentCount;
+  }
+
+  public void setCommentCount(Integer commentCount) {
+    this.commentCount = commentCount;
   }
 }

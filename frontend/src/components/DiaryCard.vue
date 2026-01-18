@@ -27,7 +27,7 @@
         <div class="stat-item">
           <span class="stat-icon">⭐</span>
           <span class="stat-value">{{ averageRatingText }}</span>
-          <span class="stat-label">({{ totalRatings }})</span>
+          <span v-if="totalRatings > 0" class="stat-label">({{ totalRatings }}人评分)</span>
         </div>
         <div class="stat-item">
           <span class="stat-icon">📅</span>
@@ -62,10 +62,32 @@ const canDelete = computed(() => {
   return user.value && user.value.id === props.diary.author?.id
 })
 
-const coverImage = computed(() => props.diary.coverImage || props.diary.cover_image || '')
+const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+const mediaBase = apiBase.replace(/\/api\/?$/, '')
+
+const resolveMediaUrl = (path) => {
+  if (!path) return ''
+  if (/^https?:\/\//i.test(path)) return path
+  const normalized = path.replace(/\\/g, '/')
+  const uploadsIndex = normalized.indexOf('/uploads/')
+  if (uploadsIndex !== -1) {
+    return `${mediaBase}${normalized.slice(uploadsIndex)}`
+  }
+  if (normalized.startsWith('/')) return `${mediaBase}${normalized}`
+  return `${mediaBase}/${normalized}`
+}
+
+const coverImage = computed(() => {
+  const img = props.diary.coverImage || props.diary.cover_image || ''
+  return img ? resolveMediaUrl(img) : ''
+})
 const viewCount = computed(() => props.diary.viewCount ?? props.diary.view_count ?? 0)
 const averageRating = computed(() => props.diary.averageRating ?? props.diary.average_rating ?? 0)
-const averageRatingText = computed(() => Number(averageRating.value || 0).toFixed(1))
+const averageRatingText = computed(() => {
+  const rating = averageRating.value
+  if (!rating || rating === 0 || isNaN(rating)) return '暂无评分'
+  return Number(rating).toFixed(1)
+})
 const totalRatings = computed(() => props.diary.totalRatings ?? props.diary.total_ratings ?? 0)
 const createdAt = computed(() => props.diary.createdAt || props.diary.created_at || '')
 const travelDate = computed(() => props.diary.travelDate || props.diary.travel_date || '')

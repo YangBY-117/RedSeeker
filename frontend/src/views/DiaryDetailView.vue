@@ -34,8 +34,8 @@
         </div>
         <div class="stat-item">
           <span class="stat-icon">⭐</span>
-          <span class="stat-value">{{ diary.averageRating?.toFixed(1) || '0.0' }}</span>
-          <span class="stat-label">评分 ({{ diary.totalRatings || 0 }})</span>
+          <span class="stat-value">{{ getRatingText() }}</span>
+          <span v-if="diary.totalRatings > 0" class="stat-label">({{ diary.totalRatings }}人评分)</span>
         </div>
       </div>
 
@@ -73,6 +73,7 @@
               :src="resolveMediaUrl(media.filePath)"
               :alt="`图片 ${index + 1}`"
               @click="showImageViewer(resolveMediaUrl(media.filePath))"
+              @error="handleImageError"
             />
             <video
               v-else-if="media.mediaType === 'video'"
@@ -99,40 +100,41 @@
         </div>
       </div>
 
-      <!-- AIGC动画生成 -->
-      <div v-if="isAuthenticated" class="aigc-section">
-        <h3 class="section-title">AI红色记忆动画</h3>
-        <p class="section-desc">基于您的红色旅游照片和文字描述，生成专属的红色记忆动画视频</p>
-        <button
-          type="button"
-          class="btn btn-primary"
-          :disabled="generatingAnimation || animationVideoUrl"
-          @click="handleGenerateAnimation"
-        >
-          {{ generatingAnimation ? '生成中...' : (animationVideoUrl ? '已生成' : '生成红色记忆动画') }}
-        </button>
-        <div v-if="animationTaskId" class="animation-status">
-          <p>任务ID: {{ animationTaskId }}</p>
-          <p>状态: {{ animationStatusText }}</p>
-          <div v-if="['processing', 'waiting'].includes(animationTaskStatus)" class="progress-bar-container">
-            <div class="progress-bar" :class="getProgressStatusClass">
-              <div class="progress-bar-fill" :style="{ width: getProgressPercentage + '%' }"></div>
-            </div>
-            <span class="progress-text">{{ getProgressPercentage }}%</span>
-          </div>
-            <button
-              type="button"
-              class="btn btn-outline"
-              @click="checkAnimationStatus"
-            >
-            刷新状态
+      <!-- 评论区域 -->
+      <div class="comments-section">
+        <h3 class="section-title">评论 ({{ comments.length }})</h3>
+        <div v-if="isAuthenticated" class="comment-form">
+          <textarea
+            v-model="newComment"
+            placeholder="写下您的评论..."
+            rows="3"
+            class="comment-input"
+          ></textarea>
+          <button
+            type="button"
+            class="btn btn-primary"
+            :disabled="!newComment.trim() || submittingComment"
+            @click="handleSubmitComment"
+          >
+            {{ submittingComment ? '提交中...' : '发表评论' }}
           </button>
         </div>
-        <div v-if="animationVideoUrl" class="animation-result">
-          <h4>生成的红色记忆动画</h4>
-          <video :src="animationVideoUrl" controls></video>
+        <div v-else class="comment-login-hint">
+          <p>请先登录后发表评论</p>
+        </div>
+        <div v-if="loadingComments" class="loading-comments">加载评论中...</div>
+        <div v-else-if="comments.length === 0" class="no-comments">暂无评论</div>
+        <div v-else class="comments-list">
+          <div v-for="comment in comments" :key="comment.id" class="comment-item">
+            <div class="comment-header">
+              <span class="comment-author">{{ comment.username || '匿名用户' }}</span>
+              <span class="comment-time">{{ formatCommentTime(comment.createdAt) }}</span>
+            </div>
+            <div class="comment-content">{{ comment.content }}</div>
+          </div>
         </div>
       </div>
+
     </div>
   </div>
 </template>
@@ -144,8 +146,8 @@ import { useAuth } from '../composables/useAuth'
 import {
   getDiaryDetail,
   rateDiary,
-  generateAnimation,
-  getAnimationStatus
+  addComment,
+  getComments
 } from '../services/diaryService'
 
 const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
@@ -160,40 +162,47 @@ const loading = ref(true)
 const error = ref('')
 const userRating = ref(0)
 const hoverRating = ref(0)
-const generatingAnimation = ref(false)
-const animationTaskId = ref('')
-const animationVideoUrl = ref('')
-const animationTaskStatus = ref('')
+const comments = ref([])
+const newComment = ref('')
+const submittingComment = ref(false)
+const loadingComments = ref(false)
 
-// 计算属性
-const getProgressPercentage = computed(() => {
-  if (!animationTaskStatus.value) return 0
-  if (animationTaskStatus.value === 'processing') return 50
-  if (animationTaskStatus.value === 'completed') return 100
-  return 0
-})
+const getRatingText = () => {
+  const rating = diary.value?.averageRating
+  if (!rating || rating === 0 || isNaN(rating)) return '暂无评分'
+  return rating.toFixed(1)
+}
 
-const getProgressStatusClass = computed(() => {
-  if (!animationTaskStatus.value) return ''
-  if (animationTaskStatus.value === 'completed') return 'progress-success'
-  if (animationTaskStatus.value === 'failed') return 'progress-error'
-  return 'progress-warning'
-})
-
-const animationStatusText = computed(() => {
-  if (!animationTaskStatus.value) return ''
-  switch (animationTaskStatus.value) {
-    case 'processing': return '动画生成中...'
-    case 'completed': return '动画生成完成'
-    case 'failed': return '动画生成失败'
-    default: return '等待中...'
-  }
-})
-
-// 格式化内容（支持换行）
+// 格式化内容（支持Markdown）
 const formatContent = (content) => {
   if (!content) return ''
-  return content.replace(/\n/g, '<br>')
+  
+  // 简单的Markdown解析
+  let html = content
+    // 标题
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    // 粗体
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    // 斜体
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // 代码块
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    // 行内代码
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    // 链接
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+    // 换行
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+  
+  // 包装段落
+  if (!html.startsWith('<h') && !html.startsWith('<p') && !html.startsWith('<pre')) {
+    html = '<p>' + html + '</p>'
+  }
+  
+  return html
 }
 
 // 格式化日期
@@ -209,20 +218,61 @@ const formatDate = (dateString) => {
 
 const resolveMediaUrl = (path) => {
   if (!path) return ''
+  
+  // 如果是完整的HTTP/HTTPS URL，直接返回
   if (/^https?:\/\//i.test(path)) return path
-  const normalized = path.replace(/\\/g, '/')
+  
+  // 如果是data URL，直接返回
+  if (/^data:/i.test(path)) return path
+  
+  // 标准化路径
+  const normalized = path.replace(/\\/g, '/').trim()
+  
+  // 如果已经是完整路径（包含协议），直接返回
+  if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+    return normalized
+  }
+  
+  // 如果路径看起来像是OSS URL（包含oss-或aliyuncs.com），直接返回
+  if (normalized.includes('oss-') || normalized.includes('aliyuncs.com')) {
+    // 如果OSS URL没有协议，添加https://
+    if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+      return 'https://' + normalized
+    }
+    return normalized
+  }
+  
+  // 如果以/uploads/开头，直接拼接mediaBase
+  if (normalized.startsWith('/uploads/')) {
+    return `${mediaBase}${normalized}`
+  }
+  
+  // 如果包含/uploads/，提取该部分
   const uploadsIndex = normalized.indexOf('/uploads/')
   if (uploadsIndex !== -1) {
     return `${mediaBase}${normalized.slice(uploadsIndex)}`
   }
-  if (normalized.startsWith('/')) return `${mediaBase}${normalized}`
-  return `${mediaBase}/${normalized}`
+  
+  // 如果以/开头但不是/uploads/，尝试拼接
+  if (normalized.startsWith('/')) {
+    return `${mediaBase}${normalized}`
+  }
+  
+  // 否则添加/uploads/前缀（假设是相对路径）
+  return `${mediaBase}/uploads/${normalized}`
 }
 
 // 图片查看器（简单实现）
 const showImageViewer = (imageUrl) => {
   // 可以在这里实现图片查看器
   window.open(imageUrl, '_blank')
+}
+
+// 处理图片加载错误
+const handleImageError = (event) => {
+  console.warn('图片加载失败:', event.target.src)
+  // 可以设置一个默认图片或隐藏该元素
+  event.target.style.display = 'none'
 }
 
 const normalizeDiaryDetail = (data) => {
@@ -258,12 +308,72 @@ const loadDiary = async () => {
     if (diary.value?.userRating) {
       userRating.value = diary.value.userRating
     }
+    // 加载评论
+    await loadComments()
   } catch (err) {
     console.error('加载日记失败:', err)
     error.value = '加载日记失败，请稍后重试'
   } finally {
     loading.value = false
   }
+}
+
+// 加载评论
+const loadComments = async () => {
+  if (!diary.value?.id) return
+  loadingComments.value = true
+  try {
+    const data = await getComments(diary.value.id)
+    comments.value = Array.isArray(data) ? data : []
+  } catch (err) {
+    console.error('加载评论失败:', err)
+    comments.value = []
+  } finally {
+    loadingComments.value = false
+  }
+}
+
+// 提交评论
+const handleSubmitComment = async () => {
+  if (!newComment.value.trim() || !diary.value) return
+  
+  submittingComment.value = true
+  const commentText = newComment.value.trim()
+  newComment.value = '' // 先清空输入框，提供即时反馈
+  
+  try {
+    await addComment(diary.value.id, commentText)
+    // 重新加载评论列表
+    await loadComments()
+  } catch (err) {
+    // 即使请求失败，也尝试重新加载评论，因为评论可能已经成功提交
+    console.error('提交评论请求失败:', err)
+    // 恢复输入框内容
+    newComment.value = commentText
+    // 尝试重新加载评论，如果评论已成功，会显示出来
+    setTimeout(async () => {
+      await loadComments()
+    }, 1000)
+  } finally {
+    submittingComment.value = false
+  }
+}
+
+// 格式化评论时间
+const formatCommentTime = (timeString) => {
+  if (!timeString) return ''
+  const date = new Date(timeString)
+  const now = new Date()
+  const diff = now - date
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  if (hours < 24) return `${hours}小时前`
+  if (days < 7) return `${days}天前`
+  return date.toLocaleDateString('zh-CN')
 }
 
 // 评分处理
@@ -283,62 +393,6 @@ const handleRate = async (rating) => {
   } catch (err) {
     console.error('评分失败:', err)
     alert('评分失败，请稍后重试')
-  }
-}
-
-// 生成动画
-const handleGenerateAnimation = async () => {
-  if (!isAuthenticated.value) {
-    alert('请先登录')
-    return
-  }
-  generatingAnimation.value = true
-  try {
-    const images = diary.value.media
-      ?.filter(m => m.mediaType === 'image')
-      .map(m => resolveMediaUrl(m.filePath)) || []
-    const description = diary.value.content?.substring(0, 500) || ''
-    
-    const result = await generateAnimation(diary.value.id, {
-      images,
-      description
-    })
-    animationTaskId.value = result.taskId || result.task_id
-    animationTaskStatus.value = result.status || result.task_status
-    
-    // 如果已完成，直接显示视频
-    if (animationTaskStatus.value === 'completed' && (result.videoUrl || result.video_url)) {
-      animationVideoUrl.value = result.videoUrl || result.video_url
-    } else {
-      // 开始轮询状态
-      checkAnimationStatus()
-    }
-  } catch (err) {
-    console.error('生成动画失败:', err)
-    alert('生成动画失败，请稍后重试')
-  } finally {
-    generatingAnimation.value = false
-  }
-}
-
-// 检查动画状态
-const checkAnimationStatus = async () => {
-  if (!animationTaskId.value) return
-  
-  try {
-    const result = await getAnimationStatus(animationTaskId.value)
-    animationTaskStatus.value = result.status || result.task_status
-    
-    if (animationTaskStatus.value === 'completed' && (result.videoUrl || result.video_url)) {
-      animationVideoUrl.value = result.videoUrl || result.video_url
-    } else if (animationTaskStatus.value === 'processing' || animationTaskStatus.value === 'waiting') {
-      // 继续轮询
-      setTimeout(() => {
-        checkAnimationStatus()
-      }, 3000)
-    }
-  } catch (err) {
-    console.error('查询动画状态失败:', err)
   }
 }
 
@@ -498,8 +552,56 @@ onMounted(() => {
   font-size: var(--font-size-base);
   line-height: 1.8;
   color: var(--color-text);
-  white-space: pre-wrap;
   margin-bottom: var(--spacing-6);
+}
+
+.diary-text :deep(h1) {
+  font-size: var(--font-size-2xl);
+  margin: var(--spacing-4) 0;
+  color: var(--color-primary);
+}
+
+.diary-text :deep(h2) {
+  font-size: var(--font-size-xl);
+  margin: var(--spacing-3) 0;
+  color: var(--color-text);
+}
+
+.diary-text :deep(h3) {
+  font-size: var(--font-size-lg);
+  margin: var(--spacing-2) 0;
+}
+
+.diary-text :deep(p) {
+  margin: var(--spacing-2) 0;
+}
+
+.diary-text :deep(strong) {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.diary-text :deep(code) {
+  background: var(--color-bg);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+.diary-text :deep(pre) {
+  background: var(--color-bg);
+  padding: var(--spacing-3);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+.diary-text :deep(a) {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.diary-text :deep(a:hover) {
+  text-decoration: underline;
 }
 
 .diary-media {
@@ -518,12 +620,20 @@ onMounted(() => {
 .media-item img {
   width: 100%;
   height: auto;
+  max-height: 500px;
+  object-fit: contain;
   cursor: pointer;
   transition: transform 0.3s;
+  display: block;
 }
 
 .media-item img:hover {
   transform: scale(1.05);
+}
+
+.media-item img[src=""],
+.media-item img:not([src]) {
+  display: none;
 }
 
 .media-item video {
@@ -569,86 +679,83 @@ onMounted(() => {
   color: var(--color-text-secondary);
 }
 
-.aigc-section {
+
+/* 评论区域样式 */
+.comments-section {
   margin-top: var(--spacing-6);
   padding-top: var(--spacing-6);
   border-top: 1px solid var(--color-border);
-  background: linear-gradient(to right, #fff5f5, #fef2f2);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-5);
 }
 
-.section-desc {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin: var(--spacing-2) 0 var(--spacing-4) 0;
+.comment-form {
+  margin-bottom: var(--spacing-5);
 }
 
-.animation-status {
-  margin-top: var(--spacing-4);
+.comment-input {
+  width: 100%;
   padding: var(--spacing-3);
-  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  resize: vertical;
+  margin-bottom: var(--spacing-3);
+}
+
+.comment-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.comment-login-hint {
+  padding: var(--spacing-4);
+  text-align: center;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-5);
+}
+
+.loading-comments,
+.no-comments {
+  padding: var(--spacing-4);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.comment-item {
+  padding: var(--spacing-4);
+  background: var(--color-bg);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
 }
 
-.animation-result {
-  margin-top: var(--spacing-4);
-}
-
-.animation-result h4 {
-  font-size: var(--font-size-lg);
-  color: var(--color-text);
-  margin: 0 0 var(--spacing-3) 0;
-  text-align: center;
-}
-
-.animation-result video {
-  width: 100%;
-  border-radius: var(--radius-md);
-  max-width: 600px;
-}
-
-/* 进度条样式 */
-.progress-bar-container {
+.comment-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: var(--spacing-2);
-  margin: var(--spacing-3) 0;
+  margin-bottom: var(--spacing-2);
 }
 
-.progress-bar {
-  flex: 1;
-  height: 8px;
-  background: var(--color-bg);
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
+.comment-author {
+  font-weight: 600;
+  color: var(--color-text);
 }
 
-.progress-bar-fill {
-  height: 100%;
-  background: linear-gradient(to right, #dc2626, #b91c1c);
-  transition: width 0.3s ease;
-  border-radius: 4px;
-}
-
-.progress-bar.progress-success .progress-bar-fill {
-  background: linear-gradient(to right, #10b981, #059669);
-}
-
-.progress-bar.progress-error .progress-bar-fill {
-  background: linear-gradient(to right, #ef4444, #dc2626);
-}
-
-.progress-bar.progress-warning .progress-bar-fill {
-  background: linear-gradient(to right, #f59e0b, #d97706);
-}
-
-.progress-text {
+.comment-time {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  min-width: 50px;
-  text-align: right;
+}
+
+.comment-content {
+  color: var(--color-text);
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 </style>

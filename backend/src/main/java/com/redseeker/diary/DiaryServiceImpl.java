@@ -23,8 +23,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
+import com.redseeker.user.UserService;
+import com.redseeker.user.UserServiceImpl;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,15 +39,52 @@ public class DiaryServiceImpl implements DiaryService {
   private static final int DEFAULT_PAGE_SIZE = 10;
 
   private final String databaseUrl;
+  private UserServiceImpl userServiceImpl;
 
   public DiaryServiceImpl() {
     this.databaseUrl = resolveDatabaseUrl();
   }
 
+  @Autowired(required = false)
+  public void setUserServiceImpl(UserServiceImpl userServiceImpl) {
+    this.userServiceImpl = userServiceImpl;
+  }
+
+  @PostConstruct
+  public void initCommentsTable() {
+    try (Connection connection = openConnection();
+        Statement statement = connection.createStatement()) {
+      String sql = "CREATE TABLE IF NOT EXISTS diary_comments ("
+          + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+          + "diary_id INTEGER NOT NULL,"
+          + "user_id INTEGER NOT NULL,"
+          + "content TEXT NOT NULL,"
+          + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+          + "FOREIGN KEY (diary_id) REFERENCES travel_diaries(id) ON DELETE CASCADE,"
+          + "FOREIGN KEY (user_id) REFERENCES users(id)"
+          + ")";
+      statement.execute(sql);
+      statement.execute("CREATE INDEX IF NOT EXISTS idx_diary_comment_diary_id ON diary_comments(diary_id)");
+      statement.execute("CREATE INDEX IF NOT EXISTS idx_diary_comment_user_id ON diary_comments(user_id)");
+      LOGGER.info("日记评论表初始化完成");
+    } catch (SQLException ex) {
+      LOGGER.error("初始化日记评论表失败", ex);
+    }
+  }
+
   @Override
   public DiaryListResponse listDiaries(DiaryListQuery query) {
     DiaryListQuery normalized = normalizeQuery(query);
-    List<DiarySummary> diaries = loadDiarySummaries(normalized.getDestination());
+    // 检查用户是否为管理员
+    boolean isAdmin = false;
+    if (normalized.getUserId() != null && userServiceImpl != null) {
+      try {
+        isAdmin = userServiceImpl.isAdmin(normalized.getUserId());
+      } catch (Exception ex) {
+        LOGGER.warn("Failed to check admin status", ex);
+      }
+    }
+    List<DiarySummary> diaries = loadDiarySummaries(normalized.getDestination(), normalized.getUserId(), isAdmin);
     Map<Long, Double> interestScores = loadUserInterestScores(normalized.getUserId());
     diaries.forEach(diary -> applyRecommendScore(diary, interestScores));
     diaries = sortDiaries(diaries, normalized.getSortBy());
@@ -56,7 +97,16 @@ public class DiaryServiceImpl implements DiaryService {
     if (normalized.getDestination() == null || normalized.getDestination().isBlank()) {
       throw new ServiceException(ErrorCode.VALIDATION_ERROR, "destination is required");
     }
-    List<DiarySummary> diaries = loadDiarySummaries(normalized.getDestination());
+    // 检查用户是否为管理员
+    boolean isAdmin = false;
+    if (normalized.getUserId() != null && userServiceImpl != null) {
+      try {
+        isAdmin = userServiceImpl.isAdmin(normalized.getUserId());
+      } catch (Exception ex) {
+        LOGGER.warn("Failed to check admin status", ex);
+      }
+    }
+    List<DiarySummary> diaries = loadDiarySummaries(normalized.getDestination(), normalized.getUserId(), isAdmin);
     diaries = sortDiaries(diaries, normalized.getSortBy());
     return paginate(diaries, normalized.getPage(), normalized.getPageSize());
   }
@@ -148,14 +198,16 @@ public class DiaryServiceImpl implements DiaryService {
             + "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
     long diaryId;
     try (Connection connection = openConnection();
-        PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+        PreparedStatement statement = connection.prepareStatement(sql)) {
       statement.setLong(1, userId);
       statement.setString(2, request.getTitle());
       statement.setString(3, request.getContent());
       statement.setString(4, request.getDestination());
       statement.setString(5, request.getTravelDate());
       statement.executeUpdate();
-      try (ResultSet keys = statement.getGeneratedKeys()) {
+      // SQLite不支持RETURN_GENERATED_KEYS，使用last_insert_rowid()获取生成的ID
+      try (PreparedStatement idStatement = connection.prepareStatement("SELECT last_insert_rowid()");
+          ResultSet keys = idStatement.executeQuery()) {
         if (keys.next()) {
           diaryId = keys.getLong(1);
           LOGGER.info("日记创建成功: diaryId={}, userId={}, title={}", diaryId, userId, request.getTitle());
@@ -191,8 +243,22 @@ public class DiaryServiceImpl implements DiaryService {
       LOGGER.info("日记创建完成: diaryId={}, title={}", diaryId, summary.getTitle());
       return summary;
     } catch (Exception ex) {
-      LOGGER.error("加载创建的日记失败，返回基本信息: diaryId={}", diaryId, ex);
+      LOGGER.warn("加载创建的日记失败，返回基本信息: diaryId={}, error={}", diaryId, ex.getMessage());
       // 即使加载失败，也返回一个基本的摘要，确保前端知道创建成功
+      // 尝试获取用户名
+      String username = "用户";
+      try (Connection connection = openConnection();
+          PreparedStatement userStmt = connection.prepareStatement("SELECT username FROM users WHERE id = ?")) {
+        userStmt.setLong(1, userId);
+        try (ResultSet rs = userStmt.executeQuery()) {
+          if (rs.next()) {
+            username = rs.getString("username");
+          }
+        }
+      } catch (Exception e) {
+        LOGGER.warn("获取用户名失败: userId={}", userId, e);
+      }
+      
       DiarySummary summary = new DiarySummary();
       summary.setId(diaryId);
       summary.setTitle(request.getTitle());
@@ -202,9 +268,8 @@ public class DiaryServiceImpl implements DiaryService {
       summary.setViewCount(0);
       summary.setAverageRating(0.0);
       summary.setTotalRatings(0);
-      // 创建一个基本的作者信息（需要从userId获取，这里先设为null或默认值）
-      summary.setAuthor(new DiaryAuthor(userId, "用户"));
-      LOGGER.info("返回日记基本信息: diaryId={}", diaryId);
+      summary.setAuthor(new DiaryAuthor(userId, username));
+      LOGGER.info("返回日记基本信息: diaryId={}, title={}", diaryId, request.getTitle());
       return summary;
     }
   }
@@ -248,6 +313,32 @@ public class DiaryServiceImpl implements DiaryService {
     } catch (SQLException ex) {
       LOGGER.error("Failed to delete diary", ex);
       throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to delete diary");
+    }
+  }
+
+  @Override
+  public void deleteAllDiaries() {
+    try (Connection connection = openConnection()) {
+      // 删除所有相关数据
+      try (PreparedStatement statement = connection.prepareStatement("DELETE FROM diary_media")) {
+        statement.executeUpdate();
+      }
+      try (PreparedStatement statement = connection.prepareStatement("DELETE FROM diary_attractions")) {
+        statement.executeUpdate();
+      }
+      try (PreparedStatement statement = connection.prepareStatement("DELETE FROM diary_ratings")) {
+        statement.executeUpdate();
+      }
+      try (PreparedStatement statement = connection.prepareStatement("DELETE FROM diary_browse_history")) {
+        statement.executeUpdate();
+      }
+      try (PreparedStatement statement = connection.prepareStatement("DELETE FROM travel_diaries")) {
+        statement.executeUpdate();
+      }
+      LOGGER.info("All diaries deleted by admin");
+    } catch (SQLException ex) {
+      LOGGER.error("Failed to delete all diaries", ex);
+      throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to delete all diaries");
     }
   }
 
@@ -344,7 +435,7 @@ public class DiaryServiceImpl implements DiaryService {
     return normalized;
   }
 
-  private List<DiarySummary> loadDiarySummaries(String destination) {
+  private List<DiarySummary> loadDiarySummaries(String destination, Long userId, boolean isAdmin) {
     List<DiarySummary> diaries = new ArrayList<>();
     String sql =
         "SELECT d.id, d.title, d.content, d.content_compressed, d.destination, d.travel_date, "
@@ -353,14 +444,28 @@ public class DiaryServiceImpl implements DiaryService {
             + "(SELECT file_path FROM diary_media WHERE diary_id = d.id AND media_type = 'image' "
             + "ORDER BY display_order ASC LIMIT 1) AS cover_image "
             + "FROM travel_diaries d JOIN users u ON u.id = d.user_id";
+    List<String> conditions = new ArrayList<>();
+    List<Object> params = new ArrayList<>();
+    
+    // 只有在用户中心查看"我的日记"时才过滤，普通列表页面显示所有用户的日记
+    // 这里不进行userId过滤，让所有用户都能看到所有日记
+    // 如果需要过滤，应该在调用时明确指定
+    
+    // 目的地过滤
     boolean filterDestination = destination != null && !destination.isBlank();
     if (filterDestination) {
-      sql += " WHERE d.destination LIKE ?";
+      conditions.add("d.destination LIKE ?");
+      params.add("%" + destination.trim() + "%");
     }
+    
+    if (!conditions.isEmpty()) {
+      sql += " WHERE " + String.join(" AND ", conditions);
+    }
+    
     try (Connection connection = openConnection();
         PreparedStatement statement = connection.prepareStatement(sql)) {
-      if (filterDestination) {
-        statement.setString(1, "%" + destination.trim() + "%");
+      for (int i = 0; i < params.size(); i++) {
+        statement.setObject(i + 1, params.get(i));
       }
       try (ResultSet rs = statement.executeQuery()) {
         while (rs.next()) {
@@ -500,6 +605,20 @@ public class DiaryServiceImpl implements DiaryService {
           detail.setMedia(loadDiaryMedia(connection, diaryId));
           detail.setAttractions(loadDiaryAttractions(connection, diaryId));
           detail.setUserRating(loadUserDiaryRating(connection, diaryId, userId));
+          
+          // 获取评论数
+          try (PreparedStatement commentStmt = connection.prepareStatement(
+              "SELECT COUNT(*) AS count FROM diary_comments WHERE diary_id = ?")) {
+            commentStmt.setLong(1, diaryId);
+            try (ResultSet commentRs = commentStmt.executeQuery()) {
+              if (commentRs.next()) {
+                detail.setCommentCount(commentRs.getInt("count"));
+              } else {
+                detail.setCommentCount(0);
+              }
+            }
+          }
+          
           return detail;
         }
       }
@@ -627,13 +746,29 @@ public class DiaryServiceImpl implements DiaryService {
     }
     try (Connection connection = openConnection()) {
       int order = 0;
-      order = insertMedia(connection, diaryId, images, "image", order);
-      order = insertUrlMedia(connection, diaryId, imageUrls, "image", order);
-      order = insertMedia(connection, diaryId, videos, "video", order);
-      insertUrlMedia(connection, diaryId, videoUrls, "video", order);
+      try {
+        order = insertMedia(connection, diaryId, images, "image", order);
+      } catch (Exception ex) {
+        LOGGER.warn("保存图片文件失败，继续处理: diaryId={}", diaryId, ex);
+      }
+      try {
+        order = insertUrlMedia(connection, diaryId, imageUrls, "image", order);
+      } catch (Exception ex) {
+        LOGGER.warn("保存图片URL失败，继续处理: diaryId={}", diaryId, ex);
+      }
+      try {
+        order = insertMedia(connection, diaryId, videos, "video", order);
+      } catch (Exception ex) {
+        LOGGER.warn("保存视频文件失败，继续处理: diaryId={}", diaryId, ex);
+      }
+      try {
+        insertUrlMedia(connection, diaryId, videoUrls, "video", order);
+      } catch (Exception ex) {
+        LOGGER.warn("保存视频URL失败，继续处理: diaryId={}", diaryId, ex);
+      }
     } catch (SQLException ex) {
-      LOGGER.error("Failed to save diary media", ex);
-      throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to save diary media");
+      LOGGER.error("保存日记媒体文件时发生连接错误: diaryId={}", diaryId, ex);
+      // 不抛出异常，让日记创建继续
     }
   }
 
@@ -667,25 +802,30 @@ public class DiaryServiceImpl implements DiaryService {
       if (file == null || file.isEmpty()) {
         continue;
       }
-      String storedPath = storeFile(file, diaryId, type, order);
-      try (PreparedStatement statement =
-          connection.prepareStatement(
-              "INSERT INTO diary_media (diary_id, media_type, file_path, display_order, created_at) "
-                  + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)")) {
-        statement.setLong(1, diaryId);
-        statement.setString(2, type);
-        statement.setString(3, storedPath);
-        statement.setInt(4, order);
-        statement.executeUpdate();
+      try {
+        String storedPath = storeFile(file, diaryId, type, order);
+        try (PreparedStatement statement =
+            connection.prepareStatement(
+                "INSERT INTO diary_media (diary_id, media_type, file_path, display_order, created_at) "
+                    + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)")) {
+          statement.setLong(1, diaryId);
+          statement.setString(2, type);
+          statement.setString(3, storedPath);
+          statement.setInt(4, order);
+          statement.executeUpdate();
+        }
+        order++;
+      } catch (Exception ex) {
+        // 单个文件保存失败不影响其他文件
+        LOGGER.warn("保存媒体文件失败，跳过: diaryId={}, type={}, filename={}", diaryId, type, file.getOriginalFilename(), ex);
+        // 继续处理下一个文件
       }
-      order++;
     }
     return order;
   }
 
   private int insertUrlMedia(
-      Connection connection, long diaryId, List<String> urls, String type, int startOrder)
-      throws SQLException {
+      Connection connection, long diaryId, List<String> urls, String type, int startOrder) {
     if (urls == null) {
       return startOrder;
     }
@@ -694,17 +834,29 @@ public class DiaryServiceImpl implements DiaryService {
       if (url == null || url.isBlank()) {
         continue;
       }
-      try (PreparedStatement statement =
-          connection.prepareStatement(
-              "INSERT INTO diary_media (diary_id, media_type, file_path, display_order, created_at) "
-                  + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)")) {
-        statement.setLong(1, diaryId);
-        statement.setString(2, type);
-        statement.setString(3, url.trim());
-        statement.setInt(4, order);
-        statement.executeUpdate();
+      try {
+        String trimmedUrl = url.trim();
+        // 限制URL长度，避免数据库字段溢出
+        if (trimmedUrl.length() > 2000) {
+          LOGGER.warn("媒体URL过长，截断: diaryId={}, type={}, length={}", diaryId, type, trimmedUrl.length());
+          trimmedUrl = trimmedUrl.substring(0, 2000);
+        }
+        try (PreparedStatement statement =
+            connection.prepareStatement(
+                "INSERT INTO diary_media (diary_id, media_type, file_path, display_order, created_at) "
+                    + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)")) {
+          statement.setLong(1, diaryId);
+          statement.setString(2, type);
+          statement.setString(3, trimmedUrl);
+          statement.setInt(4, order);
+          statement.executeUpdate();
+        }
+        order++;
+      } catch (Exception ex) {
+        // 单个URL保存失败不影响其他URL
+        LOGGER.warn("保存媒体URL失败，跳过: diaryId={}, type={}, url={}", diaryId, type, url.length() > 100 ? url.substring(0, 100) + "..." : url, ex);
+        // 继续处理下一个URL
       }
-      order++;
     }
     return order;
   }
@@ -819,6 +971,106 @@ public class DiaryServiceImpl implements DiaryService {
     return new DiaryRatingResponse(0.0, 0);
   }
 
+  @Override
+  public DiaryComment addComment(Long diaryId, String content, Long userId) {
+    assertUser(userId);
+    try (Connection connection = openConnection()) {
+      // 确保评论表存在
+      try (Statement stmt = connection.createStatement()) {
+        String createTableSql = "CREATE TABLE IF NOT EXISTS diary_comments ("
+            + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + "diary_id INTEGER NOT NULL,"
+            + "user_id INTEGER NOT NULL,"
+            + "content TEXT NOT NULL,"
+            + "created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+            + "FOREIGN KEY (diary_id) REFERENCES travel_diaries(id) ON DELETE CASCADE,"
+            + "FOREIGN KEY (user_id) REFERENCES users(id)"
+            + ")";
+        stmt.execute(createTableSql);
+      }
+      
+      // 检查日记是否存在
+      loadDiarySummaryById(diaryId);
+      
+      // 获取用户名
+      String username = "用户";
+      try (PreparedStatement userStmt = connection.prepareStatement("SELECT username FROM users WHERE id = ?")) {
+        userStmt.setLong(1, userId);
+        try (ResultSet rs = userStmt.executeQuery()) {
+          if (rs.next()) {
+            username = rs.getString("username");
+          }
+        }
+      }
+      
+      // 插入评论
+      String sql = "INSERT INTO diary_comments (diary_id, user_id, content, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)";
+      try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        statement.setLong(1, diaryId);
+        statement.setLong(2, userId);
+        statement.setString(3, content);
+        int rowsAffected = statement.executeUpdate();
+        if (rowsAffected == 0) {
+          LOGGER.error("插入评论失败，影响行数为0");
+          throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to add comment: no rows affected");
+        }
+        // SQLite不支持RETURN_GENERATED_KEYS，使用last_insert_rowid()获取生成的ID
+        try (PreparedStatement idStatement = connection.prepareStatement("SELECT last_insert_rowid()");
+            ResultSet keys = idStatement.executeQuery()) {
+          if (keys.next()) {
+            long commentId = keys.getLong(1);
+            // 获取创建时间
+            String createdAt = "";
+            try (PreparedStatement timeStmt = connection.prepareStatement("SELECT created_at FROM diary_comments WHERE id = ?")) {
+              timeStmt.setLong(1, commentId);
+              try (ResultSet rs = timeStmt.executeQuery()) {
+                if (rs.next()) {
+                  createdAt = rs.getString("created_at");
+                }
+              }
+            }
+            LOGGER.info("评论添加成功: commentId={}, diaryId={}, userId={}", commentId, diaryId, userId);
+            return new DiaryComment(commentId, diaryId, userId, username, content, createdAt);
+          } else {
+            LOGGER.error("无法获取生成的评论ID");
+            throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to add comment: cannot get generated key");
+          }
+        }
+      }
+    } catch (SQLException ex) {
+      LOGGER.error("Failed to add comment: diaryId={}, userId={}", diaryId, userId, ex);
+      throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to add comment: " + ex.getMessage());
+    }
+  }
+
+  @Override
+  public List<DiaryComment> getComments(Long diaryId) {
+    List<DiaryComment> comments = new ArrayList<>();
+    String sql = "SELECT c.id, c.diary_id, c.user_id, u.username, c.content, c.created_at "
+        + "FROM diary_comments c LEFT JOIN users u ON u.id = c.user_id "
+        + "WHERE c.diary_id = ? ORDER BY c.created_at DESC";
+    try (Connection connection = openConnection();
+        PreparedStatement statement = connection.prepareStatement(sql)) {
+      statement.setLong(1, diaryId);
+      try (ResultSet rs = statement.executeQuery()) {
+        while (rs.next()) {
+          comments.add(new DiaryComment(
+              rs.getLong("id"),
+              rs.getLong("diary_id"),
+              rs.getLong("user_id"),
+              rs.getString("username"),
+              rs.getString("content"),
+              rs.getString("created_at")
+          ));
+        }
+      }
+    } catch (SQLException ex) {
+      LOGGER.error("Failed to get comments", ex);
+      throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to get comments");
+    }
+    return comments;
+  }
+
   private void assertDiaryOwner(Long diaryId, Long userId) {
     assertUser(userId);
     String sql = "SELECT user_id FROM travel_diaries WHERE id = ?";
@@ -870,15 +1122,21 @@ public class DiaryServiceImpl implements DiaryService {
   private String storeFile(MultipartFile file, long diaryId, String type, int order) {
     String extension = resolveExtension(file.getOriginalFilename());
     String filename = "diary_" + diaryId + "_" + type + "_" + order + extension;
-    Path baseDir = Paths.get("uploads", "diaries", String.valueOf(diaryId));
+    // 使用绝对路径，确保文件存储在正确的位置
+    Path baseDir = Paths.get(System.getProperty("user.dir"), "uploads", "diaries", String.valueOf(diaryId)).toAbsolutePath().normalize();
     try {
       Files.createDirectories(baseDir);
       Path target = baseDir.resolve(filename);
       Files.write(target, file.getBytes());
-      return baseDir.resolve(filename).toString().replace("\\", "/");
+      LOGGER.info("文件已保存: {}", target);
+      LOGGER.info("文件是否存在: {}", Files.exists(target));
+      // 返回相对路径，以/uploads/开头，方便前端访问
+      String relativePath = "/uploads/diaries/" + diaryId + "/" + filename;
+      LOGGER.info("返回的文件路径: {}", relativePath);
+      return relativePath;
     } catch (IOException ex) {
-      LOGGER.error("Failed to store diary media", ex);
-      throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to store media");
+      LOGGER.error("Failed to store diary media: diaryId={}, type={}, filename={}", diaryId, type, filename, ex);
+      throw new ServiceException(ErrorCode.INTERNAL_ERROR, "Failed to store media: " + ex.getMessage());
     }
   }
 

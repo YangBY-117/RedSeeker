@@ -3,7 +3,7 @@
     <div class="user-header">
       <h1 class="page-title">用户中心</h1>
       <div class="user-info-card">
-        <div class="user-avatar-large">{{ getUserInitial() }}</div>
+        <div class="user-avatar-large" :style="headerAvatarStyle"></div>
         <div class="user-details">
           <h2 class="user-name">{{ user?.username || '游客' }}</h2>
           <p class="user-meta">ID: {{ user?.id || '-' }}</p>
@@ -14,105 +14,107 @@
     <!-- 标签页 -->
     <div class="tabs">
       <button
-        :class="['tab-btn', { active: activeTab === 'diaries' }]"
-        @click="activeTab = 'diaries'"
+        :class="['tab-btn', { active: activeTab === 'settings' }]"
+        @click="activeTab = 'settings'"
       >
-        📝 我的日记
+        ⚙️ 个人设置
       </button>
       <button
-        :class="['tab-btn', { active: activeTab === 'routes' }]"
-        @click="activeTab = 'routes'"
+        v-if="user?.isAdmin"
+        :class="['tab-btn', { active: activeTab === 'admin' }]"
+        @click="activeTab = 'admin'"
       >
-        🗺️ 历史路线
+        🔧 管理员
       </button>
     </div>
 
-    <!-- 我的日记 -->
-    <div v-if="activeTab === 'diaries'" class="tab-content">
+    <!-- 个人设置 -->
+    <div v-if="activeTab === 'settings'" class="tab-content">
       <div class="content-header">
-        <h2 class="section-title">我的红色旅游日记</h2>
-        <button class="btn btn-primary" @click="goToCreateDiary">
-          ✏️ 撰写新日记
-        </button>
+        <h2 class="section-title">个人设置</h2>
       </div>
 
-      <div v-if="diariesLoading" class="loading-state">加载中...</div>
-      <div v-else-if="myDiaries.length === 0" class="empty-state">
-        <p>您还没有撰写过日记</p>
-        <button class="btn btn-primary" @click="goToCreateDiary">
-          撰写第一篇日记
-        </button>
-      </div>
-      <div v-else class="diaries-grid">
-        <DiaryCard
-          v-for="diary in myDiaries"
-          :key="diary.id"
-          :diary="diary"
-          @click="viewDiary(diary.id)"
-          @deleted="handleDiaryDeleted"
-        />
-      </div>
-
-      <!-- 分页 -->
-      <div v-if="myDiaries.length > 0" class="pagination">
-        <button
-          :disabled="diaryPage === 1"
-          @click="goToDiaryPage(diaryPage - 1)"
-          class="page-btn"
-        >
-          上一页
-        </button>
-        <div class="page-info">
-          <span>第 {{ diaryPage }} / {{ diaryTotalPages }} 页</span>
+      <div class="settings-form">
+        <div class="form-group">
+          <label class="form-label">头像</label>
+          <div class="avatar-upload">
+            <div class="avatar-preview" :style="avatarStyle">
+            </div>
+            <div class="avatar-upload-controls">
+              <input
+                type="file"
+                ref="avatarInput"
+                @change="handleAvatarChange"
+                accept="image/*"
+                class="avatar-file-input"
+                id="avatar-upload"
+              />
+              <label for="avatar-upload" class="btn btn-secondary btn-sm">
+                {{ avatarFile ? '更换头像' : '选择头像' }}
+              </label>
+              <span v-if="avatarFile" class="avatar-file-name">{{ avatarFile.name }}</span>
+            </div>
+          </div>
         </div>
-        <button
-          :disabled="diaryPage === diaryTotalPages"
-          @click="goToDiaryPage(diaryPage + 1)"
-          class="page-btn"
-        >
-          下一页
-        </button>
+
+        <div class="form-group">
+          <label class="form-label">用户名</label>
+          <input
+            type="text"
+            v-model="editForm.username"
+            :placeholder="user?.username || ''"
+            class="form-input"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">新密码</label>
+          <input
+            type="password"
+            v-model="editForm.password"
+            placeholder="留空则不修改密码"
+            class="form-input"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">确认密码</label>
+          <input
+            type="password"
+            v-model="editForm.confirmPassword"
+            placeholder="再次输入新密码"
+            class="form-input"
+          />
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" @click="saveProfile" :disabled="saving">
+            {{ saving ? '保存中...' : '保存修改' }}
+          </button>
+          <button class="btn btn-secondary" @click="resetForm">重置</button>
+        </div>
+
+        <div v-if="saveMessage" :class="['message', saveMessageType]">
+          {{ saveMessage }}
+        </div>
       </div>
     </div>
 
-    <!-- 历史路线 -->
-    <div v-if="activeTab === 'routes'" class="tab-content">
+    <!-- 管理员功能 -->
+    <div v-if="activeTab === 'admin' && user?.isAdmin" class="tab-content">
       <div class="content-header">
-        <h2 class="section-title">历史路线规划</h2>
+        <h2 class="section-title">管理员功能</h2>
       </div>
 
-      <div v-if="routesLoading" class="loading-state">加载中...</div>
-      <div v-else-if="historyRoutes.length === 0" class="empty-state">
-        <p>您还没有规划过路线</p>
-        <button class="btn btn-primary" @click="goToRoutePlanning">
-          开始规划路线
-        </button>
-      </div>
-      <div v-else class="routes-list">
-        <div
-          v-for="route in historyRoutes"
-          :key="route.id"
-          class="route-card"
-          @click="viewRoute(route.id)"
-        >
-          <div class="route-header">
-            <h3 class="route-title">{{ route.name || `路线 ${route.id}` }}</h3>
-            <span class="route-date">{{ formatDate(route.created_at) }}</span>
-          </div>
-          <div class="route-info">
-            <div class="info-item">
-              <span class="info-icon">📍</span>
-              <span class="info-text">{{ route.attraction_count || 0 }} 个景点</span>
-            </div>
-            <div class="info-item">
-              <span class="info-icon">📏</span>
-              <span class="info-text">{{ formatDistance(route.total_distance) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-icon">⏱️</span>
-              <span class="info-text">{{ formatDuration(route.total_duration) }}</span>
-            </div>
-          </div>
+      <div class="admin-panel">
+        <div class="admin-warning">
+          <p>⚠️ 危险操作：以下操作不可恢复</p>
+        </div>
+
+        <div class="admin-actions">
+          <button class="btn btn-danger" @click="confirmDeleteAllDiaries" :disabled="deleting">
+            {{ deleting ? '删除中...' : '🗑️ 删除所有日记' }}
+          </button>
         </div>
       </div>
     </div>
@@ -124,12 +126,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { getDiaryList } from '../services/diaryService'
+import { updateProfile, deleteAllDiaries, uploadAvatar } from '../services/userService'
 import DiaryCard from '../components/DiaryCard.vue'
 
 const router = useRouter()
-const { user, isAuthenticated } = useAuth()
+const { user, isAuthenticated, getCurrentUser } = useAuth()
 
-const activeTab = ref('diaries')
+const activeTab = ref('settings')
 
 // 日记相关
 const myDiaries = ref([])
@@ -142,10 +145,210 @@ const diaryTotalPages = ref(1)
 const historyRoutes = ref([])
 const routesLoading = ref(false)
 
+// 个人设置相关
+const editForm = ref({
+  username: '',
+  password: '',
+  confirmPassword: '',
+  avatar: ''
+})
+const avatarInput = ref(null)
+const avatarFile = ref(null)
+const avatarPreview = ref(null)
+const saving = ref(false)
+const saveMessage = ref('')
+const saveMessageType = ref('')
+
+// 管理员相关
+const deleting = ref(false)
+
+// 默认头像路径
+const DEFAULT_AVATAR = '/生成系统头像.png'
+
 // 获取用户首字母
 const getUserInitial = () => {
   if (!user.value || !user.value.username) return '👤'
   return user.value.username.charAt(0).toUpperCase()
+}
+
+// 头像样式（用于设置表单）
+const avatarStyle = computed(() => {
+  let avatarUrl = DEFAULT_AVATAR
+  if (avatarPreview.value) {
+    avatarUrl = avatarPreview.value
+  } else if (user.value?.avatar) {
+    // 如果是相对路径，需要加上API基础URL
+    if (user.value.avatar.startsWith('/uploads/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+      avatarUrl = apiBase.replace(/\/api\/?$/, '') + user.value.avatar
+    } else if (user.value.avatar.startsWith('http://') || user.value.avatar.startsWith('https://')) {
+      avatarUrl = user.value.avatar
+    } else {
+      // 其他情况，尝试作为相对路径处理
+      avatarUrl = user.value.avatar
+    }
+  }
+  return {
+    backgroundImage: `url(${avatarUrl})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundColor: '#f0f0f0' // 添加背景色，避免白色背景时看不到
+  }
+})
+
+// 处理头像文件选择
+const handleAvatarChange = (event) => {
+  const file = event.target.files?.[0]
+  if (file) {
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+      saveMessage.value = '请选择图片文件'
+      saveMessageType.value = 'error'
+      return
+    }
+    // 验证文件大小（限制为5MB）
+    if (file.size > 5 * 1024 * 1024) {
+      saveMessage.value = '图片大小不能超过5MB'
+      saveMessageType.value = 'error'
+      return
+    }
+    avatarFile.value = file
+    // 创建预览
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      avatarPreview.value = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
+// 头像样式（用于头部显示）
+const headerAvatarStyle = computed(() => {
+  let avatarUrl = DEFAULT_AVATAR
+  if (user.value?.avatar) {
+    // 如果是相对路径，需要加上API基础URL
+    if (user.value.avatar.startsWith('/uploads/')) {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
+      avatarUrl = apiBase.replace(/\/api\/?$/, '') + user.value.avatar
+    } else if (user.value.avatar.startsWith('http://') || user.value.avatar.startsWith('https://')) {
+      avatarUrl = user.value.avatar
+    } else {
+      // 其他情况，尝试作为相对路径处理
+      avatarUrl = user.value.avatar
+    }
+  }
+  return {
+    backgroundImage: `url(${avatarUrl})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundColor: '#f0f0f0' // 添加背景色，避免白色背景时看不到
+  }
+})
+
+// 重置表单
+const resetForm = () => {
+  editForm.value = {
+    username: user.value?.username || '',
+    password: '',
+    confirmPassword: '',
+    avatar: user.value?.avatar || ''
+  }
+  avatarFile.value = null
+  avatarPreview.value = null
+  if (avatarInput.value) {
+    avatarInput.value.value = ''
+  }
+  saveMessage.value = ''
+}
+
+// 保存个人资料
+const saveProfile = async () => {
+  if (editForm.value.password && editForm.value.password !== editForm.value.confirmPassword) {
+    saveMessage.value = '两次输入的密码不一致'
+    saveMessageType.value = 'error'
+    return
+  }
+
+  saving.value = true
+  saveMessage.value = ''
+  try {
+    let avatarUrl = user.value?.avatar
+    
+    // 如果有新头像文件，先上传
+    if (avatarFile.value) {
+      avatarUrl = await uploadAvatar(user.value.id, avatarFile.value)
+    }
+    
+    // 更新用户信息
+    const updateData = {
+      userId: user.value.id
+    }
+    if (editForm.value.username && editForm.value.username !== user.value.username) {
+      updateData.username = editForm.value.username
+    }
+    if (editForm.value.password) {
+      updateData.password = editForm.value.password
+    }
+    if (avatarUrl) {
+      updateData.avatar = avatarUrl
+    }
+
+    const updatedUser = await updateProfile(updateData)
+    // 更新用户信息，确保头像URL正确
+    user.value = {
+      ...user.value,
+      ...updatedUser,
+      avatar: avatarUrl || updatedUser.avatar || user.value.avatar // 确保使用最新的头像URL
+    }
+    // 强制刷新用户信息，确保头像更新
+    try {
+      await getCurrentUser()
+    } catch (e) {
+      console.warn('刷新用户信息失败:', e)
+    }
+    saveMessage.value = '保存成功！'
+    saveMessageType.value = 'success'
+    
+    // 清空表单
+    editForm.value.password = ''
+    editForm.value.confirmPassword = ''
+    avatarFile.value = null
+    avatarPreview.value = null
+    if (avatarInput.value) {
+      avatarInput.value.value = ''
+    }
+  } catch (error) {
+    console.error('保存失败:', error)
+    saveMessage.value = error.response?.data?.message || error.message || '保存失败，请重试'
+    saveMessageType.value = 'error'
+  } finally {
+    saving.value = false
+  }
+}
+
+// 确认删除所有日记
+const confirmDeleteAllDiaries = () => {
+  if (confirm('⚠️ 警告：此操作将删除所有用户的日记，且不可恢复！\n\n确定要继续吗？')) {
+    handleDeleteAllDiaries()
+  }
+}
+
+// 删除所有日记
+const handleDeleteAllDiaries = async () => {
+  deleting.value = true
+  try {
+    await deleteAllDiaries()
+    alert('所有日记已删除')
+    // 刷新日记列表
+    if (activeTab.value === 'diaries') {
+      loadMyDiaries(diaryPage.value)
+    }
+  } catch (error) {
+    console.error('删除失败:', error)
+    alert(error.response?.data?.message || '删除失败，请重试')
+  } finally {
+    deleting.value = false
+  }
 }
 
 // 加载我的日记
@@ -154,14 +357,20 @@ const loadMyDiaries = async (page = 1) => {
 
   diariesLoading.value = true
   try {
-    // 调用后端接口获取当前用户的日记
-    // 注意：后端需要支持按 userId 筛选
-    const response = await getDiaryList({
-      userId: user.value.id,
+    // 如果是管理员，不传 userId 可以查看所有日记
+    // 如果是普通用户，传 userId 只能查看自己的日记
+    const queryParams = {
       page,
       pageSize: diaryPageSize.value,
       sortBy: 'time'
-    })
+    }
+    
+    // 只有管理员可以查看所有日记，普通用户只能查看自己的
+    if (!user.value.isAdmin) {
+      queryParams.userId = user.value.id
+    }
+    
+    const response = await getDiaryList(queryParams)
 
     myDiaries.value = response.diaries || []
     diaryTotalPages.value = response.totalPages || 1
@@ -264,8 +473,7 @@ const formatDuration = (seconds) => {
 
 onMounted(() => {
   if (isAuthenticated.value && user.value) {
-    loadMyDiaries()
-    loadHistoryRoutes()
+    resetForm()
   } else {
     router.push('/')
   }
@@ -312,6 +520,7 @@ onMounted(() => {
   color: white;
   font-size: var(--font-size-3xl);
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 .user-details {
@@ -514,6 +723,148 @@ onMounted(() => {
 .btn-primary:hover {
   background: linear-gradient(to right, #b91c1c, #991b1b);
   transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface);
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 设置表单 */
+.settings-form {
+  max-width: 600px;
+}
+
+.form-group {
+  margin-bottom: var(--spacing-5);
+}
+
+.form-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: var(--spacing-2);
+  color: var(--color-text);
+}
+
+.form-input {
+  width: 100%;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.avatar-upload {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.avatar-upload-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  flex: 1;
+}
+
+.avatar-file-input {
+  display: none;
+}
+
+.btn-sm {
+  padding: var(--spacing-2) var(--spacing-4);
+  font-size: var(--font-size-sm);
+}
+
+.avatar-file-name {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-left: var(--spacing-2);
+}
+
+.avatar-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: var(--font-size-2xl);
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-6);
+}
+
+.message {
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-3);
+  border-radius: var(--radius-md);
+}
+
+.message.success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.message.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* 管理员面板 */
+.admin-panel {
+  max-width: 600px;
+}
+
+.admin-warning {
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-5);
+}
+
+.admin-warning p {
+  margin: 0;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.admin-actions {
+  display: flex;
+  gap: var(--spacing-3);
 }
 
 /* 响应式 */

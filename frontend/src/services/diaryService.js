@@ -96,7 +96,8 @@ export async function createDiary(formData) {
   const response = await api.post('/diary/create', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
-    }
+    },
+    timeout: 120000 // 120秒超时，因为上传文件可能需要更长时间
   })
   return response.data.data
 }
@@ -133,6 +134,30 @@ export async function deleteDiary(id) {
  */
 export async function rateDiary(id, rating) {
   const response = await api.post(`/diary/${id}/rate`, { rating })
+  return response.data.data
+}
+
+/**
+ * 添加评论
+ * @param {number} id - 日记ID
+ * @param {string} content - 评论内容
+ * @returns {Promise<Object>} 评论信息
+ */
+export async function addComment(id, content) {
+  const response = await api.post(`/diary/${id}/comment`, { 
+    diaryId: id,
+    content: content
+  })
+  return response.data.data
+}
+
+/**
+ * 获取评论列表
+ * @param {number} id - 日记ID
+ * @returns {Promise<Array>} 评论列表
+ */
+export async function getComments(id) {
+  const response = await api.get(`/diary/${id}/comments`)
   return response.data.data
 }
 

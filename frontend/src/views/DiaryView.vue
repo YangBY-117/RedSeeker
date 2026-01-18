@@ -192,10 +192,10 @@ const loadDiaries = async (page = 1) => {
       }
       hasSearched.value = true
     } else {
-      // 无搜索关键词，获取推荐列表
+      // 无搜索关键词，获取推荐列表（不传userId，显示所有用户的日记）
       response = await getDiaryList({
         sortBy: sortBy.value,
-        userId: user.value?.id,
+        // 不传userId，让后端返回所有用户的日记
         page,
         pageSize: pageSize.value
       })
